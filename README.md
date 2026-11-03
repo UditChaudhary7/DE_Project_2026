@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BookMyShow Movie & Event Ticketing Database: DBMS Project
 
 **Course:** Database Management Systems · **Year:** B.Tech 2nd year · **Team size:** 4
@@ -765,3 +766,6 @@ WHERE movie_id = 2
   AND starts_at >= '2026-07-01'
   AND EXTRACT(ISODOW FROM starts_at) IN (6, 7);
 ```
+=======
+# DE_Project_2026
+>>>>>>> 64482539538894a1ce9616a00bc90fb3cfe3fc0b

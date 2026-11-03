@@ -1,0 +1,27 @@
+{
+  "team_number": "T0012",
+  "group_lead": {
+    "name": "Granth Gupta",
+    "enrollment_no": "2501010170",
+    "github": "YOUR_GITHUB_USERNAME"
+  },
+  "members": [
+    {
+      "name": "Udit",
+      "enrollment_no": "2501010614",
+      "github": "UditChaudhary7"
+    },
+    {
+      "name": "Tirth Dev Gera",
+      "enrollment_no": "2501010596",
+      "github": "GITHUB_3"
+    },
+    {
+      "name": "Yyuvraj Singh",
+      "enrollment_no": "2501010538",
+      "github": "GITHUB_4"
+    }
+  ],
+  "postgres_version": "",
+  "laptop_used_for_benchmarks": ""
+}
