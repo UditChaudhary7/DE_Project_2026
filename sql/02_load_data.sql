@@ -47,7 +47,7 @@ FROM shows s1
 JOIN shows s2
   ON s1.screen_id = s2.screen_id
  AND s1.show_id < s2.show_id
- AND tsrange(s1.starts_at, s1.ends_at) && tsrange(s2.starts_at, s2.ends_at);
+ AND tstzrange(s1.starts_at, s1.ends_at) && tstzrange(s2.starts_at, s2.ends_at);
 
 SELECT count(*) AS formula_mismatches
 FROM bookings

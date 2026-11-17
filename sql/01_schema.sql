@@ -95,7 +95,7 @@ CREATE TABLE shows (
     CONSTRAINT no_overlapping_shows
         EXCLUDE USING gist (
             screen_id WITH =,
-            tsrange(starts_at, ends_at) WITH &&
+            tstzrange(starts_at, ends_at) WITH &&
         )
 );
 
