@@ -1,0 +1,83 @@
+erDiagram
+    cities    ||--o{ venues        : "has"
+    cities    ||--o{ customers     : "lives in"
+    venues    ||--o{ screens       : "has"
+    screens   ||--o{ seats         : "contains"
+    screens   ||--o{ shows         : "hosts"
+    movies    ||--o{ shows         : "plays as"
+    movies    ||--o{ movie_reviews : "receives"
+    customers ||--o{ movie_reviews : "writes"
+    customers ||--o{ bookings      : "makes"
+    shows     ||--o{ bookings      : "booked for"
+    offers    |o--o{ bookings      : "applied to"
+    bookings  ||--o{ booking_seats : "holds"
+    shows     ||--o{ booking_seats : "sells"
+    seats     ||--o{ booking_seats : "sold as"
+
+    cities { int city_id PK
+            text city_name UK
+            text state }
+    venues { int venue_id PK
+            text venue_name
+            int city_id FK
+            text chain
+            text address }
+    screens { int screen_id PK
+            int venue_id FK
+            text screen_name
+            text screen_type
+            int total_seats }
+    seats { int seat_id PK
+            int screen_id FK
+            text row_label
+            int seat_number
+            text seat_class }
+    movies { int movie_id PK
+            text title
+            text language
+            text certificate
+            int duration_min
+            date release_date }
+    shows { int show_id PK
+            int movie_id FK
+            int screen_id FK
+            timestamptz starts_at
+            timestamptz ends_at
+            text format
+            numeric base_price }
+    customers { int customer_id PK
+            text full_name
+            text email UK
+            text phone UK
+            int city_id FK
+            timestamptz created_at }
+    offers { text offer_code PK
+            text description
+            numeric discount_pct
+            numeric max_discount
+            date valid_from
+            date valid_to }
+    bookings { int booking_id PK
+            text booking_code UK
+            int customer_id FK
+            int show_id FK
+            timestamptz booked_at
+            int num_tickets
+            numeric ticket_amount
+            numeric convenience_fee
+            numeric fnb_amount
+            text offer_code FK
+            numeric discount
+            numeric total_amount
+            text payment_method
+            text status }
+    booking_seats { int booking_id FK
+            int show_id PK
+            int seat_id PK
+            numeric price }
+    movie_reviews { int review_id PK
+            int movie_id FK
+            int customer_id FK
+            int rating
+            text review_text
+            timestamptz created_at }
