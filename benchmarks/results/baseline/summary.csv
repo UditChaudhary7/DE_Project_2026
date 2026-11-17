@@ -1,0 +1,31 @@
+query_id,type,avg_ms,median_ms,min_ms,max_ms,scan_nodes
+R01,READ,8.626,8.720,8.371,8.786,Index Scan using movies_pkey on movies | Seq Scan on screens | Seq Scan on venues | Index Scan using no_overlapping_shows on shows
+R02,READ,5.969,5.874,5.859,6.175,Seq Scan on screens | Seq Scan on venues | Index Scan using no_overlapping_shows on shows
+R03,READ,0.268,0.267,0.266,0.271,Index Scan using shows_pkey on shows | Index Scan using uq_screen_seat_position on seats | Bitmap Heap Scan on booking_seats | Bitmap Index Scan on uq_show_seat
+R04,READ,0.054,0.061,0.035,0.067,Index Scan using bookings_booking_code_key on bookings
+R05,READ,11.635,11.727,11.325,11.854,Seq Scan on bookings | Index Scan using shows_pkey on shows | Seq Scan on movies | Seq Scan on screens | Seq Scan on venues
+R06,READ,0.261,0.311,0.142,0.329,Seq Scan on movies
+R07,READ,1.106,1.048,0.980,1.289,Seq Scan on screens | Bitmap Heap Scan on shows | Bitmap Index Scan on no_overlapping_shows | Index Only Scan using uq_show_seat on booking_seats
+R08,READ,24.346,23.574,23.449,26.016,Seq Scan on bookings | Seq Scan on shows | Seq Scan on movies
+R09,READ,9.863,9.323,8.712,11.555,Seq Scan on bookings
+R10,READ,486.657,470.251,412.277,577.443,Seq Scan on shows
+R11,READ,93.305,90.780,90.293,98.841,Seq Scan on booking_seats | Seq Scan on seats | Seq Scan on screens
+R12,READ,154.993,158.437,143.333,163.210,Seq Scan on shows | Seq Scan on bookings
+R13,READ,24.832,22.469,21.263,30.763,Seq Scan on offers | Seq Scan on bookings
+R14,READ,6.946,6.283,5.787,8.767,Seq Scan on movie_reviews | Seq Scan on movies
+R15,READ,58.456,57.733,54.429,63.205,Seq Scan on bookings
+R16,READ,40.211,41.370,33.905,45.357,Seq Scan on bookings | Seq Scan on shows | Seq Scan on screens | Seq Scan on venues
+R17,READ,62.345,57.040,56.263,73.733,Seq Scan on booking_seats | Seq Scan on shows | Index Scan using uq_screen_seat_position on seats
+R18,READ,127.188,125.257,115.346,140.961,Seq Scan on bookings | Seq Scan on shows | Seq Scan on movies | Seq Scan on screens | Seq Scan on venues
+R19,READ,2366.689,2368.177,2294.462,2437.427,Seq Scan on shows | Seq Scan on bookings
+R20,READ,29.863,28.445,23.656,37.488,Seq Scan on bookings
+R21,READ,94.482,94.841,90.382,98.224,Seq Scan on bookings
+R22,READ,70.015,72.402,61.689,75.955,Seq Scan on bookings
+R23,READ,0.034,0.028,0.027,0.047,Index Scan using customers_phone_key on customers
+R24,READ,102.348,101.702,100.998,104.344,Seq Scan on booking_seats | Seq Scan on seats | Seq Scan on screens | Seq Scan on venues
+R25,READ,40.569,42.074,35.163,44.469,Seq Scan on booking_seats | Seq Scan on shows | Seq Scan on screens
+W01,WRITE,1.288,1.466,0.817,1.580,(no scan)
+W02,WRITE,19.147,18.143,15.129,24.169,Index Scan using bookings_pkey on bookings | Index Scan using seats_pkey on seats | Index Scan using shows_pkey on shows | Index Only Scan using uq_show_seat on booking_seats
+W03,WRITE,0.858,0.910,0.678,0.987,Index Scan using bookings_pkey on bookings
+W04,WRITE,13.687,13.303,12.823,14.934,Seq Scan on bookings | Index Scan using booking_seats_pkey on booking_seats
+W05,WRITE,9.432,10.120,6.721,11.454,Seq Scan on shows

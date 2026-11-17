@@ -1,0 +1,168 @@
+=== W02 run 1 ===
+Insert on booking_seats  (cost=1297.51..1364.78 rows=0 width=0) (actual time=14.826..14.828 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: uq_show_seat
+  Tuples Inserted: 2
+  Conflicting Tuples: 0
+  Buffers: shared hit=734
+  ->  Subquery Scan on "*SELECT*"  (cost=1297.51..1364.78 rows=2 width=28) (actual time=14.551..14.562 rows=2.00 loops=1)
+        Buffers: shared hit=703
+        ->  Limit  (cost=1297.51..1364.78 rows=2 width=44) (actual time=14.550..14.560 rows=2.00 loops=1)
+              Buffers: shared hit=703
+              InitPlan 2
+                ->  Result  (cost=1295.95..1295.96 rows=1 width=4) (actual time=0.500..0.501 rows=1.00 loops=1)
+                      Buffers: shared hit=94
+                      InitPlan 1
+                        ->  Limit  (cost=0.42..1295.95 rows=1 width=4) (actual time=0.499..0.500 rows=1.00 loops=1)
+                              Buffers: shared hit=94
+                              ->  Index Scan using bookings_pkey on bookings  (cost=0.42..6478.06 rows=5 width=4) (actual time=0.499..0.499 rows=1.00 loops=1)
+                                    Filter: ((status)::text = 'PENDING'::text)
+                                    Rows Removed by Filter: 5282
+                                    Index Searches: 1
+                                    Buffers: shared hit=94
+              ->  Nested Loop Anti Join  (cost=1.55..6089.11 rows=181 width=44) (actual time=14.550..14.558 rows=2.00 loops=1)
+                    Buffers: shared hit=703
+                    ->  Nested Loop  (cost=1.13..4501.85 rows=188 width=12) (actual time=14.530..14.534 rows=2.00 loops=1)
+                          Join Filter: (s.screen_id = se.screen_id)
+                          Rows Removed by Join Filter: 63727
+                          Buffers: shared hit=697
+                          ->  Index Scan using seats_pkey on seats se  (cost=0.29..3074.13 rows=94056 width=8) (actual time=0.003..4.807 rows=63729.00 loops=1)
+                                Index Searches: 1
+                                Buffers: shared hit=595
+                          ->  Materialize  (cost=0.84..16.88 rows=1 width=12) (actual time=0.000..0.000 rows=1.00 loops=63729)
+                                Storage: Memory  Maximum Storage: 17kB
+                                Buffers: shared hit=102
+                                ->  Nested Loop  (cost=0.84..16.88 rows=1 width=12) (actual time=0.512..0.513 rows=1.00 loops=1)
+                                      Buffers: shared hit=102
+                                      ->  Index Scan using bookings_pkey on bookings b  (cost=0.42..8.44 rows=1 width=8) (actual time=0.505..0.505 rows=1.00 loops=1)
+                                            Index Cond: (booking_id = (InitPlan 2).col1)
+                                            Index Searches: 1
+                                            Buffers: shared hit=98
+                                      ->  Index Scan using shows_pkey on shows s  (cost=0.42..8.44 rows=1 width=8) (actual time=0.006..0.006 rows=1.00 loops=1)
+                                            Index Cond: (show_id = b.show_id)
+                                            Index Searches: 1
+                                            Buffers: shared hit=4
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..8.44 rows=1 width=8) (actual time=0.008..0.008 rows=0.00 loops=2)
+                          Index Cond: ((show_id = b.show_id) AND (seat_id = se.seat_id))
+                          Heap Fetches: 0
+                          Index Searches: 2
+                          Buffers: shared hit=6
+Planning:
+  Buffers: shared hit=307
+Planning Time: 0.836 ms
+Trigger for constraint booking_seats_booking_id_fkey: time=0.179 calls=2
+Trigger for constraint booking_seats_show_id_fkey: time=0.047 calls=2
+Trigger for constraint booking_seats_seat_id_fkey: time=0.036 calls=2
+Execution Time: 15.129 ms
+=== W02 run 2 ===
+Insert on booking_seats  (cost=1297.51..1364.78 rows=0 width=0) (actual time=17.853..17.855 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: uq_show_seat
+  Tuples Inserted: 2
+  Conflicting Tuples: 0
+  Buffers: shared hit=738 dirtied=1
+  ->  Subquery Scan on "*SELECT*"  (cost=1297.51..1364.78 rows=2 width=28) (actual time=17.739..17.743 rows=2.00 loops=1)
+        Buffers: shared hit=705
+        ->  Limit  (cost=1297.51..1364.78 rows=2 width=44) (actual time=17.738..17.741 rows=2.00 loops=1)
+              Buffers: shared hit=705
+              InitPlan 2
+                ->  Result  (cost=1295.95..1295.96 rows=1 width=4) (actual time=1.079..1.080 rows=1.00 loops=1)
+                      Buffers: shared hit=94
+                      InitPlan 1
+                        ->  Limit  (cost=0.42..1295.95 rows=1 width=4) (actual time=1.076..1.077 rows=1.00 loops=1)
+                              Buffers: shared hit=94
+                              ->  Index Scan using bookings_pkey on bookings  (cost=0.42..6478.06 rows=5 width=4) (actual time=1.076..1.076 rows=1.00 loops=1)
+                                    Filter: ((status)::text = 'PENDING'::text)
+                                    Rows Removed by Filter: 5282
+                                    Index Searches: 1
+                                    Buffers: shared hit=94
+              ->  Nested Loop Anti Join  (cost=1.55..6089.11 rows=181 width=44) (actual time=17.737..17.739 rows=2.00 loops=1)
+                    Buffers: shared hit=705
+                    ->  Nested Loop  (cost=1.13..4501.85 rows=188 width=12) (actual time=17.704..17.705 rows=2.00 loops=1)
+                          Join Filter: (s.screen_id = se.screen_id)
+                          Rows Removed by Join Filter: 63727
+                          Buffers: shared hit=697
+                          ->  Index Scan using seats_pkey on seats se  (cost=0.29..3074.13 rows=94056 width=8) (actual time=0.008..5.756 rows=63729.00 loops=1)
+                                Index Searches: 1
+                                Buffers: shared hit=595
+                          ->  Materialize  (cost=0.84..16.88 rows=1 width=12) (actual time=0.000..0.000 rows=1.00 loops=63729)
+                                Storage: Memory  Maximum Storage: 17kB
+                                Buffers: shared hit=102
+                                ->  Nested Loop  (cost=0.84..16.88 rows=1 width=12) (actual time=1.116..1.117 rows=1.00 loops=1)
+                                      Buffers: shared hit=102
+                                      ->  Index Scan using bookings_pkey on bookings b  (cost=0.42..8.44 rows=1 width=8) (actual time=1.100..1.101 rows=1.00 loops=1)
+                                            Index Cond: (booking_id = (InitPlan 2).col1)
+                                            Index Searches: 1
+                                            Buffers: shared hit=98
+                                      ->  Index Scan using shows_pkey on shows s  (cost=0.42..8.44 rows=1 width=8) (actual time=0.012..0.012 rows=1.00 loops=1)
+                                            Index Cond: (show_id = b.show_id)
+                                            Index Searches: 1
+                                            Buffers: shared hit=4
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..8.44 rows=1 width=8) (actual time=0.014..0.014 rows=0.00 loops=2)
+                          Index Cond: ((show_id = b.show_id) AND (seat_id = se.seat_id))
+                          Heap Fetches: 2
+                          Index Searches: 2
+                          Buffers: shared hit=8
+Planning:
+  Buffers: shared hit=307
+Planning Time: 1.854 ms
+Trigger for constraint booking_seats_booking_id_fkey: time=0.149 calls=2
+Trigger for constraint booking_seats_show_id_fkey: time=0.040 calls=2
+Trigger for constraint booking_seats_seat_id_fkey: time=0.031 calls=2
+Execution Time: 18.143 ms
+=== W02 run 3 ===
+Insert on booking_seats  (cost=1297.51..1364.78 rows=0 width=0) (actual time=23.674..23.676 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: uq_show_seat
+  Tuples Inserted: 2
+  Conflicting Tuples: 0
+  Buffers: shared hit=738 dirtied=1
+  ->  Subquery Scan on "*SELECT*"  (cost=1297.51..1364.78 rows=2 width=28) (actual time=23.473..23.482 rows=2.00 loops=1)
+        Buffers: shared hit=705
+        ->  Limit  (cost=1297.51..1364.78 rows=2 width=44) (actual time=23.471..23.480 rows=2.00 loops=1)
+              Buffers: shared hit=705
+              InitPlan 2
+                ->  Result  (cost=1295.95..1295.96 rows=1 width=4) (actual time=0.869..0.870 rows=1.00 loops=1)
+                      Buffers: shared hit=94
+                      InitPlan 1
+                        ->  Limit  (cost=0.42..1295.95 rows=1 width=4) (actual time=0.866..0.867 rows=1.00 loops=1)
+                              Buffers: shared hit=94
+                              ->  Index Scan using bookings_pkey on bookings  (cost=0.42..6478.06 rows=5 width=4) (actual time=0.865..0.865 rows=1.00 loops=1)
+                                    Filter: ((status)::text = 'PENDING'::text)
+                                    Rows Removed by Filter: 5282
+                                    Index Searches: 1
+                                    Buffers: shared hit=94
+              ->  Nested Loop Anti Join  (cost=1.55..6089.11 rows=181 width=44) (actual time=23.470..23.477 rows=2.00 loops=1)
+                    Buffers: shared hit=705
+                    ->  Nested Loop  (cost=1.13..4501.85 rows=188 width=12) (actual time=23.427..23.430 rows=2.00 loops=1)
+                          Join Filter: (s.screen_id = se.screen_id)
+                          Rows Removed by Join Filter: 63727
+                          Buffers: shared hit=697
+                          ->  Index Scan using seats_pkey on seats se  (cost=0.29..3074.13 rows=94056 width=8) (actual time=0.008..7.908 rows=63729.00 loops=1)
+                                Index Searches: 1
+                                Buffers: shared hit=595
+                          ->  Materialize  (cost=0.84..16.88 rows=1 width=12) (actual time=0.000..0.000 rows=1.00 loops=63729)
+                                Storage: Memory  Maximum Storage: 17kB
+                                Buffers: shared hit=102
+                                ->  Nested Loop  (cost=0.84..16.88 rows=1 width=12) (actual time=0.896..0.897 rows=1.00 loops=1)
+                                      Buffers: shared hit=102
+                                      ->  Index Scan using bookings_pkey on bookings b  (cost=0.42..8.44 rows=1 width=8) (actual time=0.882..0.882 rows=1.00 loops=1)
+                                            Index Cond: (booking_id = (InitPlan 2).col1)
+                                            Index Searches: 1
+                                            Buffers: shared hit=98
+                                      ->  Index Scan using shows_pkey on shows s  (cost=0.42..8.44 rows=1 width=8) (actual time=0.011..0.011 rows=1.00 loops=1)
+                                            Index Cond: (show_id = b.show_id)
+                                            Index Searches: 1
+                                            Buffers: shared hit=4
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..8.44 rows=1 width=8) (actual time=0.019..0.019 rows=0.00 loops=2)
+                          Index Cond: ((show_id = b.show_id) AND (seat_id = se.seat_id))
+                          Heap Fetches: 2
+                          Index Searches: 2
+                          Buffers: shared hit=8
+Planning:
+  Buffers: shared hit=307
+Planning Time: 1.551 ms
+Trigger for constraint booking_seats_booking_id_fkey: time=0.216 calls=2
+Trigger for constraint booking_seats_show_id_fkey: time=0.071 calls=2
+Trigger for constraint booking_seats_seat_id_fkey: time=0.056 calls=2
+Execution Time: 24.169 ms

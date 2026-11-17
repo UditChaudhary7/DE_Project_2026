@@ -1,0 +1,117 @@
+=== R07 run 1 ===
+Sort  (cost=3190.47..3190.51 rows=15 width=63) (actual time=0.506..0.507 rows=17.00 loops=1)
+  Sort Key: s.starts_at
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=619
+  ->  GroupAggregate  (cost=3189.65..3190.18 rows=15 width=63) (actual time=0.490..0.498 rows=17.00 loops=1)
+        Group Key: s.show_id, sc.screen_name, sc.total_seats
+        Buffers: shared hit=616
+        ->  Sort  (cost=3189.65..3189.69 rows=15 width=27) (actual time=0.480..0.482 rows=45.00 loops=1)
+              Sort Key: s.show_id, sc.screen_name, sc.total_seats
+              Sort Method: quicksort  Memory: 27kB
+              Buffers: shared hit=616
+              ->  Nested Loop Left Join  (cost=19.16..3189.36 rows=15 width=27) (actual time=0.185..0.465 rows=45.00 loops=1)
+                    Buffers: shared hit=610
+                    ->  Nested Loop  (cost=18.73..3081.96 rows=8 width=23) (actual time=0.178..0.414 rows=17.00 loops=1)
+                          Buffers: shared hit=539
+                          ->  Seq Scan on screens sc  (cost=0.00..10.12 rows=5 width=15) (actual time=0.004..0.016 rows=5.00 loops=1)
+                                Filter: (venue_id = 11)
+                                Rows Removed by Filter: 485
+                                Buffers: shared hit=4
+                          ->  Bitmap Heap Scan on shows s  (cost=18.73..614.35 rows=2 width=16) (actual time=0.074..0.079 rows=3.40 loops=5)
+                                Recheck Cond: (screen_id = sc.screen_id)
+                                Filter: ((starts_at)::date = '2026-06-28'::date)
+                                Rows Removed by Filter: 330
+                                Heap Blocks: exact=501
+                                Buffers: shared hit=535
+                                ->  Bitmap Index Scan on no_overlapping_shows  (cost=0.00..18.73 rows=327 width=0) (actual time=0.019..0.019 rows=333.20 loops=5)
+                                      Index Cond: (screen_id = sc.screen_id)
+                                      Index Searches: 5
+                                      Buffers: shared hit=34
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..13.37 rows=5 width=8) (actual time=0.002..0.003 rows=2.41 loops=17)
+                          Index Cond: (show_id = s.show_id)
+                          Heap Fetches: 41
+                          Index Searches: 17
+                          Buffers: shared hit=71
+Planning:
+  Buffers: shared hit=267
+Planning Time: 0.645 ms
+Execution Time: 0.980 ms
+=== R07 run 2 ===
+Sort  (cost=3190.47..3190.51 rows=15 width=63) (actual time=0.563..0.564 rows=17.00 loops=1)
+  Sort Key: s.starts_at
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=619
+  ->  GroupAggregate  (cost=3189.65..3190.18 rows=15 width=63) (actual time=0.545..0.554 rows=17.00 loops=1)
+        Group Key: s.show_id, sc.screen_name, sc.total_seats
+        Buffers: shared hit=616
+        ->  Sort  (cost=3189.65..3189.69 rows=15 width=27) (actual time=0.536..0.537 rows=45.00 loops=1)
+              Sort Key: s.show_id, sc.screen_name, sc.total_seats
+              Sort Method: quicksort  Memory: 27kB
+              Buffers: shared hit=616
+              ->  Nested Loop Left Join  (cost=19.16..3189.36 rows=15 width=27) (actual time=0.227..0.512 rows=45.00 loops=1)
+                    Buffers: shared hit=610
+                    ->  Nested Loop  (cost=18.73..3081.96 rows=8 width=23) (actual time=0.220..0.460 rows=17.00 loops=1)
+                          Buffers: shared hit=539
+                          ->  Seq Scan on screens sc  (cost=0.00..10.12 rows=5 width=15) (actual time=0.005..0.017 rows=5.00 loops=1)
+                                Filter: (venue_id = 11)
+                                Rows Removed by Filter: 485
+                                Buffers: shared hit=4
+                          ->  Bitmap Heap Scan on shows s  (cost=18.73..614.35 rows=2 width=16) (actual time=0.082..0.088 rows=3.40 loops=5)
+                                Recheck Cond: (screen_id = sc.screen_id)
+                                Filter: ((starts_at)::date = '2026-06-28'::date)
+                                Rows Removed by Filter: 330
+                                Heap Blocks: exact=501
+                                Buffers: shared hit=535
+                                ->  Bitmap Index Scan on no_overlapping_shows  (cost=0.00..18.73 rows=327 width=0) (actual time=0.027..0.027 rows=333.20 loops=5)
+                                      Index Cond: (screen_id = sc.screen_id)
+                                      Index Searches: 5
+                                      Buffers: shared hit=34
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..13.37 rows=5 width=8) (actual time=0.002..0.003 rows=2.41 loops=17)
+                          Index Cond: (show_id = s.show_id)
+                          Heap Fetches: 41
+                          Index Searches: 17
+                          Buffers: shared hit=71
+Planning:
+  Buffers: shared hit=267
+Planning Time: 0.585 ms
+Execution Time: 1.048 ms
+=== R07 run 3 ===
+Sort  (cost=3190.47..3190.51 rows=15 width=63) (actual time=0.748..0.749 rows=17.00 loops=1)
+  Sort Key: s.starts_at
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=619
+  ->  GroupAggregate  (cost=3189.65..3190.18 rows=15 width=63) (actual time=0.727..0.736 rows=17.00 loops=1)
+        Group Key: s.show_id, sc.screen_name, sc.total_seats
+        Buffers: shared hit=616
+        ->  Sort  (cost=3189.65..3189.69 rows=15 width=27) (actual time=0.718..0.720 rows=45.00 loops=1)
+              Sort Key: s.show_id, sc.screen_name, sc.total_seats
+              Sort Method: quicksort  Memory: 27kB
+              Buffers: shared hit=616
+              ->  Nested Loop Left Join  (cost=19.16..3189.36 rows=15 width=27) (actual time=0.379..0.700 rows=45.00 loops=1)
+                    Buffers: shared hit=610
+                    ->  Nested Loop  (cost=18.73..3081.96 rows=8 width=23) (actual time=0.370..0.642 rows=17.00 loops=1)
+                          Buffers: shared hit=539
+                          ->  Seq Scan on screens sc  (cost=0.00..10.12 rows=5 width=15) (actual time=0.008..0.020 rows=5.00 loops=1)
+                                Filter: (venue_id = 11)
+                                Rows Removed by Filter: 485
+                                Buffers: shared hit=4
+                          ->  Bitmap Heap Scan on shows s  (cost=18.73..614.35 rows=2 width=16) (actual time=0.117..0.123 rows=3.40 loops=5)
+                                Recheck Cond: (screen_id = sc.screen_id)
+                                Filter: ((starts_at)::date = '2026-06-28'::date)
+                                Rows Removed by Filter: 330
+                                Heap Blocks: exact=501
+                                Buffers: shared hit=535
+                                ->  Bitmap Index Scan on no_overlapping_shows  (cost=0.00..18.73 rows=327 width=0) (actual time=0.022..0.022 rows=333.20 loops=5)
+                                      Index Cond: (screen_id = sc.screen_id)
+                                      Index Searches: 5
+                                      Buffers: shared hit=34
+                    ->  Index Only Scan using uq_show_seat on booking_seats bs  (cost=0.42..13.37 rows=5 width=8) (actual time=0.002..0.003 rows=2.41 loops=17)
+                          Index Cond: (show_id = s.show_id)
+                          Heap Fetches: 41
+                          Index Searches: 17
+                          Buffers: shared hit=71
+Planning:
+  Buffers: shared hit=267
+Planning Time: 1.058 ms
+Execution Time: 1.289 ms
