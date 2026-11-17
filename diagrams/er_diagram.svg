@@ -1,0 +1,405 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1200" width="100%" height="100%" style="background-color: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="headerGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1f6feb"/>
+      <stop offset="100%" stop-color="#388bfd"/>
+    </linearGradient>
+    <linearGradient id="headerGradPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8957e5"/>
+      <stop offset="100%" stop-color="#a371f7"/>
+    </linearGradient>
+    <linearGradient id="headerGradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#238636"/>
+      <stop offset="100%" stop-color="#2ea043"/>
+    </linearGradient>
+    <linearGradient id="headerGradAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d29922"/>
+      <stop offset="100%" stop-color="#e3b341"/>
+    </linearGradient>
+    <linearGradient id="headerGradTeal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0969da"/>
+      <stop offset="100%" stop-color="#1b7c83"/>
+    </linearGradient>
+    
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#58a6ff"/>
+    </marker>
+    <marker id="crow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 6 L 0 12 M 10 0 L 10 12" fill="none" stroke="#79c0ff" stroke-width="1.8"/>
+    </marker>
+    <marker id="one" viewBox="0 0 12 12" refX="2" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 2 0 L 2 12 M 6 0 L 6 12" fill="none" stroke="#79c0ff" stroke-width="1.8"/>
+    </marker>
+  </defs>
+
+  <!-- Title Banner -->
+  <text x="850" y="45" text-anchor="middle" fill="#f0f6fc" font-size="28" font-weight="700" letter-spacing="1">BookMyShow Relational Database Schema (ERD)</text>
+  <text x="850" y="75" text-anchor="middle" fill="#8b949e" font-size="14">All 11 Entities, Primary Keys (PK), Foreign Keys (FK), Unique Keys (UK) &amp; Relational Cardinalities</text>
+
+  <!-- RELATIONSHIP PATHS -->
+  <g fill="none" stroke="#388bfd" stroke-width="2" opacity="0.6">
+    <!-- cities -> venues -->
+    <path d="M 170 230 L 170 290" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- cities -> customers -->
+    <path d="M 280 180 C 600 180, 800 130, 1260 180" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- venues -> screens -->
+    <path d="M 170 470 L 170 540" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- screens -> seats -->
+    <path d="M 170 720 L 170 790" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- screens -> shows -->
+    <path d="M 290 620 C 450 620, 520 450, 680 450" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- movies -> shows -->
+    <path d="M 800 310 L 800 370" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- movies -> movie_reviews -->
+    <path d="M 920 220 C 970 220, 970 200, 1030 200" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- customers -> movie_reviews -->
+    <path d="M 1260 220 L 1230 220" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- customers -> bookings -->
+    <path d="M 1370 380 L 1370 450" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- shows -> bookings -->
+    <path d="M 920 500 C 1080 500, 1140 540, 1260 540" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- offers -> bookings -->
+    <path d="M 920 780 C 1080 780, 1150 720, 1260 720" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- bookings -> booking_seats -->
+    <path d="M 1370 940 L 1370 990" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- shows -> booking_seats -->
+    <path d="M 800 640 C 800 1060, 1050 1060, 1260 1060" marker-start="url(#one)" marker-end="url(#crow)"/>
+    <!-- seats -> booking_seats -->
+    <path d="M 290 890 C 600 890, 800 1100, 1260 1100" marker-start="url(#one)" marker-end="url(#crow)"/>
+  </g>
+
+  <!-- TABLE 1: cities -->
+  <g transform="translate(60, 120)" filter="url(#shadow)">
+    <rect width="220" height="110" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 212 0 Q 220 0 220 8 L 220 32 L 0 32 Z" fill="url(#headerGradBlue)"/>
+    <text x="110" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">cities</text>
+    <!-- cols -->
+    <text x="15" y="52" fill="#e6edf3" font-size="12">city_id</text>
+    <text x="140" y="52" fill="#8b949e" font-size="11">INT</text>
+    <rect x="180" y="40" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="194" y="52" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+    
+    <text x="15" y="74" fill="#e6edf3" font-size="12">city_name</text>
+    <text x="140" y="74" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="180" y="62" width="28" height="16" rx="4" fill="#3fb950"/>
+    <text x="194" y="74" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">UK</text>
+
+    <text x="15" y="96" fill="#e6edf3" font-size="12">state</text>
+    <text x="140" y="96" fill="#8b949e" font-size="11">VARCHAR</text>
+  </g>
+
+  <!-- TABLE 2: venues -->
+  <g transform="translate(60, 290)" filter="url(#shadow)">
+    <rect width="220" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 212 0 Q 220 0 220 8 L 220 32 L 0 32 Z" fill="url(#headerGradBlue)"/>
+    <text x="110" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">venues</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">venue_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="180" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="194" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#e6edf3" font-size="12">venue_name</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="102" fill="#58a6ff" font-size="12">city_id</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">INT</text>
+    <rect x="180" y="90" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="194" y="102" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">chain</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">address</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">TEXT</text>
+  </g>
+
+  <!-- TABLE 3: screens -->
+  <g transform="translate(60, 540)" filter="url(#shadow)">
+    <rect width="230" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 222 0 Q 230 0 230 8 L 230 32 L 0 32 Z" fill="url(#headerGradBlue)"/>
+    <text x="115" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">screens</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">screen_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="190" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="204" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#58a6ff" font-size="12">venue_id</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">INT</text>
+    <rect x="190" y="66" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="204" y="78" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="102" fill="#e6edf3" font-size="12">screen_name</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">screen_type</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">total_seats</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">INT</text>
+  </g>
+
+  <!-- TABLE 4: seats -->
+  <g transform="translate(60, 790)" filter="url(#shadow)">
+    <rect width="230" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 222 0 Q 230 0 230 8 L 220 32 L 0 32 Z" fill="url(#headerGradBlue)"/>
+    <text x="115" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">seats</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">seat_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="190" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="204" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#58a6ff" font-size="12">screen_id</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">INT</text>
+    <rect x="190" y="66" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="204" y="78" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="102" fill="#e6edf3" font-size="12">row_label</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">seat_number</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">INT</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">seat_class</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">VARCHAR</text>
+  </g>
+
+  <!-- TABLE 5: movies -->
+  <g transform="translate(680, 110)" filter="url(#shadow)">
+    <rect width="240" height="200" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 232 0 Q 240 0 240 8 L 240 32 L 0 32 Z" fill="url(#headerGradPurple)"/>
+    <text x="120" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">movies</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">movie_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="195" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="209" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#e6edf3" font-size="12">title</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="102" fill="#e6edf3" font-size="12">language</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">certificate</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">duration_min</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">INT</text>
+
+    <text x="15" y="174" fill="#e6edf3" font-size="12">release_date</text>
+    <text x="140" y="174" fill="#8b949e" font-size="11">DATE</text>
+  </g>
+
+  <!-- TABLE 6: shows -->
+  <g transform="translate(680, 370)" filter="url(#shadow)">
+    <rect width="240" height="230" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 232 0 Q 240 0 240 8 L 240 32 L 0 32 Z" fill="url(#headerGradPurple)"/>
+    <text x="120" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">shows</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">show_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="195" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="209" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#58a6ff" font-size="12">movie_id</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">INT</text>
+    <rect x="195" y="66" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="209" y="78" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="102" fill="#58a6ff" font-size="12">screen_id</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">INT</text>
+    <rect x="195" y="90" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="209" y="102" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">starts_at</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">TIMESTAMPTZ</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">ends_at</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">TIMESTAMPTZ</text>
+
+    <text x="15" y="174" fill="#e6edf3" font-size="12">format</text>
+    <text x="140" y="174" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="198" fill="#e6edf3" font-size="12">base_price</text>
+    <text x="140" y="198" fill="#8b949e" font-size="11">NUMERIC</text>
+  </g>
+
+  <!-- TABLE 8: offers -->
+  <g transform="translate(680, 680)" filter="url(#shadow)">
+    <rect width="240" height="200" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 232 0 Q 240 0 240 8 L 240 32 L 0 32 Z" fill="url(#headerGradGreen)"/>
+    <text x="120" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">offers</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">offer_code</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="195" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="209" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#e6edf3" font-size="12">description</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="102" fill="#e6edf3" font-size="12">discount_pct</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">INT</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">max_discount</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">valid_from</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">DATE</text>
+
+    <text x="15" y="174" fill="#e6edf3" font-size="12">valid_to</text>
+    <text x="140" y="174" fill="#8b949e" font-size="11">DATE</text>
+  </g>
+
+  <!-- TABLE 7: customers -->
+  <g transform="translate(1260, 110)" filter="url(#shadow)">
+    <rect width="250" height="200" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 242 0 Q 250 0 250 8 L 250 32 L 0 32 Z" fill="url(#headerGradAmber)"/>
+    <text x="125" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">customers</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">customer_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="219" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#e6edf3" font-size="12">full_name</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="102" fill="#e6edf3" font-size="12">email</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="205" y="90" width="28" height="16" rx="4" fill="#3fb950"/>
+    <text x="219" y="102" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">UK</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">phone</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="205" y="114" width="28" height="16" rx="4" fill="#3fb950"/>
+    <text x="219" y="126" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">UK</text>
+
+    <text x="15" y="150" fill="#58a6ff" font-size="12">city_id</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="138" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="219" y="150" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="174" fill="#e6edf3" font-size="12">created_at</text>
+    <text x="140" y="174" fill="#8b949e" font-size="11">TIMESTAMPTZ</text>
+  </g>
+
+  <!-- TABLE 11: movie_reviews -->
+  <g transform="translate(1000, 160)" filter="url(#shadow)">
+    <rect width="230" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 222 0 Q 230 0 230 8 L 230 32 L 0 32 Z" fill="url(#headerGradTeal)"/>
+    <text x="115" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">movie_reviews</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">review_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="185" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="199" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#58a6ff" font-size="12">movie_id</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">INT</text>
+    <rect x="185" y="66" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="199" y="78" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="102" fill="#58a6ff" font-size="12">customer_id</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">INT</text>
+    <rect x="185" y="90" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="199" y="102" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">rating</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">INT</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">review_text</text>
+    <text x="140" y="150" fill="#8b949e" font-size="11">TEXT</text>
+  </g>
+
+  <!-- TABLE 9: bookings -->
+  <g transform="translate(1260, 450)" filter="url(#shadow)">
+    <rect width="250" height="390" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 242 0 Q 250 0 250 8 L 250 32 L 0 32 Z" fill="url(#headerGradAmber)"/>
+    <text x="125" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">bookings</text>
+    
+    <text x="15" y="54" fill="#e6edf3" font-size="12">booking_id</text>
+    <text x="135" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="219" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#e6edf3" font-size="12">booking_code</text>
+    <text x="135" y="78" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="205" y="66" width="28" height="16" rx="4" fill="#3fb950"/>
+    <text x="219" y="78" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">UK</text>
+
+    <text x="15" y="102" fill="#58a6ff" font-size="12">customer_id</text>
+    <text x="135" y="102" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="90" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="219" y="102" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="126" fill="#58a6ff" font-size="12">show_id</text>
+    <text x="135" y="126" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="114" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="219" y="126" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="150" fill="#e6edf3" font-size="12">booked_at</text>
+    <text x="135" y="150" fill="#8b949e" font-size="11">TIMESTAMPTZ</text>
+
+    <text x="15" y="174" fill="#e6edf3" font-size="12">num_tickets</text>
+    <text x="135" y="174" fill="#8b949e" font-size="11">INT</text>
+
+    <text x="15" y="198" fill="#e6edf3" font-size="12">ticket_amount</text>
+    <text x="135" y="198" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="222" fill="#e6edf3" font-size="12">convenience_fee</text>
+    <text x="135" y="222" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="246" fill="#e6edf3" font-size="12">fnb_amount</text>
+    <text x="135" y="246" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="270" fill="#58a6ff" font-size="12">offer_code</text>
+    <text x="135" y="270" fill="#8b949e" font-size="11">VARCHAR</text>
+    <rect x="205" y="258" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="219" y="270" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="294" fill="#e6edf3" font-size="12">discount</text>
+    <text x="135" y="294" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="318" fill="#e6edf3" font-size="12">total_amount</text>
+    <text x="135" y="318" fill="#8b949e" font-size="11">NUMERIC</text>
+
+    <text x="15" y="342" fill="#e6edf3" font-size="12">payment_method</text>
+    <text x="135" y="342" fill="#8b949e" font-size="11">VARCHAR</text>
+
+    <text x="15" y="366" fill="#e6edf3" font-size="12">status</text>
+    <text x="135" y="366" fill="#8b949e" font-size="11">VARCHAR</text>
+  </g>
+
+  <!-- TABLE 10: booking_seats -->
+  <g transform="translate(1260, 990)" filter="url(#shadow)">
+    <rect width="250" height="150" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <path d="M 0 8 Q 0 0 8 0 L 242 0 Q 250 0 250 8 L 250 32 L 0 32 Z" fill="url(#headerGradAmber)"/>
+    <text x="125" y="22" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">booking_seats</text>
+    
+    <text x="15" y="54" fill="#58a6ff" font-size="12">booking_id</text>
+    <text x="140" y="54" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="42" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="219" y="54" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="78" fill="#58a6ff" font-size="12">show_id</text>
+    <text x="140" y="78" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="66" width="28" height="16" rx="4" fill="#1f6feb"/>
+    <text x="219" y="78" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FK</text>
+
+    <text x="15" y="102" fill="#58a6ff" font-size="12">seat_id</text>
+    <text x="140" y="102" fill="#8b949e" font-size="11">INT</text>
+    <rect x="205" y="90" width="28" height="16" rx="4" fill="#d29922"/>
+    <text x="219" y="102" text-anchor="middle" fill="#0d1117" font-size="10" font-weight="700">PK</text>
+
+    <text x="15" y="126" fill="#e6edf3" font-size="12">price</text>
+    <text x="140" y="126" fill="#8b949e" font-size="11">NUMERIC</text>
+  </g>
+
+</svg>
