@@ -1,0 +1,21 @@
+{
+  "name": "de_project_2026",
+  "version": "1.0.0",
+  "description": "**Course:** Database Management Systems · **Year:** B.Tech 2nd year · **Team size:** 4 **Database:** PostgreSQL 15 or newer · **Final submission:** Mon 23 Nov 2026 **Topics used:** Data types & constraints · Keys & relationships · Normalization · Query execution plans · Indexing · Query optimization · VACUUM/ANALYZE · Partitioning & sharding",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UditChaudhary7/DE_Project_2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/UditChaudhary7/DE_Project_2026/issues"
+  },
+  "homepage": "https://github.com/UditChaudhary7/DE_Project_2026#readme"
+}

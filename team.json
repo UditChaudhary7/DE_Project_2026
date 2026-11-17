@@ -19,9 +19,9 @@
     {
       "name": "Yyuvraj Singh",
       "enrollment_no": "2501010538",
-      "github": "GITHUB_4"
+      "github": "YuvrajSingh-d"
     }
   ],
-  "postgres_version": "",
-  "laptop_used_for_benchmarks": ""
+  "postgres_version": "18.4 (Postgres.app)",
+  "laptop_used_for_benchmarks": "Apple Silicon Mac"
 }

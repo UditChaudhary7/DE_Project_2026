@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # BookMyShow Movie & Event Ticketing Database: DBMS Project
 
 **Course:** Database Management Systems · **Year:** B.Tech 2nd year · **Team size:** 4
@@ -23,12 +22,12 @@
 
 | Role | Name | Enrollment No. | GitHub Username |
 |------|------|----------------|-----------------|
-| Group Lead | | | |
-| Member 2 | | | |
-| Member 3 | | | |
-| Member 4 | | | |
+| Group Lead | Granth Gupta | 2501010170 | YOUR_GITHUB_USERNAME |
+| Member 2 | Udit | 2501010614 | UditChaudhary7 |
+| Member 3 | Tirth Dev Gera | 2501010596 | GITHUB_3 |
+| Member 4 | Yyuvraj Singh | 2501010538 | YuvrajSingh-d |
 
-**Team No.:** ____ · **Section:** ____ · **Repository URL:** ____
+**Team No.:** T0012 · **Section:** ____ · **Repository URL:** https://github.com/UditChaudhary7/DE_Project_2026.git
 
 ---
 
@@ -766,6 +765,3 @@ WHERE movie_id = 2
   AND starts_at >= '2026-07-01'
   AND EXTRACT(ISODOW FROM starts_at) IN (6, 7);
 ```
-=======
-# DE_Project_2026
->>>>>>> 64482539538894a1ce9616a00bc90fb3cfe3fc0b
