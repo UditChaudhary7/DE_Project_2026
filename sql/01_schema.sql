@@ -1,11 +1,3 @@
--- =====================================================================
--- sql/01_schema.sql : BookMyShow ticketing schema (Phase 2)
--- Run on an EMPTY database:  psql -d bms_db -f sql/01_schema.sql
--- Only constraints here (PK, FK, UNIQUE, NOT NULL, CHECK, EXCLUDE).
--- No extra indexes: baseline must reflect an untuned database.
--- Column ORDER matches the CSV headers so \copy works by position.
--- =====================================================================
-
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 DROP SCHEMA IF EXISTS bms CASCADE;
@@ -123,7 +115,6 @@ CREATE TABLE movie_reviews (
     created_at   timestamptz NOT NULL
 );
 
--- Value-list CHECKs (lists taken from SELECT DISTINCT on the seed data)
 ALTER TABLE venues   ADD CONSTRAINT venues_chain_chk  CHECK (chain IN ('Cinepolis','Independent','INOX','Miraj','PVR'));
 ALTER TABLE screens  ADD CONSTRAINT screens_type_chk  CHECK (screen_type IN ('4DX','GOLD','IMAX','STANDARD'));
 ALTER TABLE shows    ADD CONSTRAINT shows_format_chk  CHECK (format IN ('2D','3D','4DX','IMAX'));
