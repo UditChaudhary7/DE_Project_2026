@@ -1,0 +1,53 @@
+SET
+1. booked seat on a screen different from the show screen (expect 0)
+ count 
+-------
+     0
+(1 row)
+
+2. num_tickets vs seat rows, per status
+     status     | bookings | tickets_match_seat_rows | no_seat_rows 
+----------------+----------+-------------------------+--------------
+ CANCELLED      |     8910 |                       0 |         8910
+ CONFIRMED      |   133568 |                  133568 |            0
+ PAYMENT_FAILED |     7606 |                       0 |         7606
+ PENDING        |       10 |                      10 |            0
+(4 rows)
+
+3. overlapping shows on one screen (expect 0)
+ count 
+-------
+     0
+(1 row)
+
+4. ticket_amount vs sum of seat prices (mismatches)
+ count 
+-------
+     0
+(1 row)
+
+5. screens.total_seats vs count of seats (mismatches)
+ count 
+-------
+     0
+(1 row)
+
+6. shows.ends_at - starts_at vs movie duration
+ equal_to_duration | different 
+-------------------+-----------
+                 0 |    160034
+(1 row)
+
+7. when is offer_code empty?
+ no_offer | bookings | with_discount 
+----------+----------+---------------
+ f        |    22435 |         22435
+ t        |   127659 |             0
+(2 rows)
+
+8. rows with no review text
+ no_text | total 
+---------+-------
+   16162 | 32510
+(1 row)
+

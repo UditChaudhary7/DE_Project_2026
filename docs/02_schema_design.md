@@ -1,379 +1,203 @@
-# Phase 2: Relational Schema Design & Data Architecture Report
+# Schema Design (Phase 2)
 
-**Project:** BookMyShow Movie & Event Ticketing Database (DBMS Project 2026)  
-**Schema Name:** `bms`  
-**Target RDBMS:** PostgreSQL 15+  
-**Team Number:** T0012  
+Database: PostgreSQL 16, schema `bms`. All 11 tables load cleanly from `seed_data/` with the row counts from the project brief. Files: `sql/01_schema.sql`, `sql/02_load_data.sql`.
 
----
+## 1. ER diagram
 
-## 1. Executive Summary & Design Principles
+![ER diagram](../diagrams/er_diagram.png)
 
-The objective of Phase 2 is to architect a production-grade relational schema in PostgreSQL derived directly from the production seed exports (spanning 11 entities, 300,389 booking seat records, and 160,034 shows).
+Mermaid source: `diagrams/er_diagram.mmd`.
 
-### Core Architectural Decisions
-1. **Schema Encapsulation:** All relational objects are housed inside the dedicated namespace `bms` (`CREATE SCHEMA bms; SET search_path TO bms;`).
-2. **Domain-Specific Typing:** Replaced generic text storage with exact data types:
-   - Currency and monetary sums use `NUMERIC(10, 2)` to eliminate IEEE 754 floating-point rounding errors.
-   - Timestamps incorporate explicit offsets using `TIMESTAMPTZ` (`TIMESTAMP WITH TIME ZONE`) to ensure multi-region consistency across Indian Standard Time (`+05:30`).
-   - Dates without time components use `DATE`.
-   - Small ranges and enumeration attributes use constrained `VARCHAR` or `INT` with strict domain `CHECK` constraints.
-3. **Strict Relational Constraints Only:** In accordance with Phase 2 rules, only fundamental relational constraints are created (**Primary Keys, Foreign Keys, Unique Keys, Check Constraints, and Exclusion Constraints**). No auxiliary secondary indexes are created in this phase, establishing an un-tuned baseline for Phase 3.
-4. **Declarative Invariant Enforcement:** Critical business invariants—preventing double booking of auditorium seats and preventing overlapping show schedules on the same screen—are guaranteed declaratively at the storage engine level.
+Cardinalities: city 1:N venues, city 1:N customers; venue 1:N screens; screen 1:N seats and 1:N shows; movie 1:N shows and 1:N reviews; customer 1:N bookings and 1:N reviews; show 1:N bookings; offer 0..1:N bookings; booking 1:N booking_seats. `booking_seats` is the link between bookings and seats (M:N through shows).
 
----
+## 2. Data dictionary
 
-## 2. Entity-Relationship (ER) Diagram
+### cities
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| city_id | integer | PK | surrogate key from the export |
+| city_name | text | NOT NULL, UNIQUE | natural candidate key |
+| state | text | NOT NULL | every city belongs to a state |
 
-```mermaid
-erDiagram
-    CITIES ||--o{ VENUES : "houses"
-    CITIES ||--o{ CUSTOMERS : "locates"
-    VENUES ||--o{ SCREENS : "operates"
-    SCREENS ||--o{ SEATS : "lays_out"
-    SCREENS ||--o{ SHOWS : "hosts"
-    MOVIES ||--o{ SHOWS : "screens"
-    MOVIES ||--o{ MOVIE_REVIEWS : "rated_by"
-    CUSTOMERS ||--o{ MOVIE_REVIEWS : "writes"
-    CUSTOMERS ||--o{ BOOKINGS : "places"
-    SHOWS ||--o{ BOOKINGS : "books"
-    OFFERS ||--o{ BOOKINGS : "applies_to"
-    BOOKINGS ||--o{ BOOKING_SEATS : "reserves"
-    SHOWS ||--o{ BOOKING_SEATS : "allocates"
-    SEATS ||--o{ BOOKING_SEATS : "ticketed_as"
+### venues
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| venue_id | integer | PK | |
+| venue_name | text | NOT NULL | |
+| city_id | integer | NOT NULL, FK cities, ON DELETE RESTRICT | a cinema must have a city; do not delete a city that still has cinemas |
+| chain | text | NOT NULL, CHECK in (Cinepolis, Independent, INOX, Miraj, PVR) | list taken from `SELECT DISTINCT` |
+| address | text | NOT NULL | |
 
-    CITIES {
-        int city_id PK
-        varchar city_name
-        varchar state
-    }
+### screens
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| screen_id | integer | PK | |
+| venue_id | integer | NOT NULL, FK venues, ON DELETE CASCADE | a screen cannot exist without its venue |
+| screen_name | text | NOT NULL, UNIQUE (venue_id, screen_name) | names are unique inside a venue |
+| screen_type | text | NOT NULL, CHECK in (4DX, GOLD, IMAX, STANDARD) | |
+| total_seats | integer | NOT NULL, CHECK > 0 | capacity (derived, see section 4) |
 
-    VENUES {
-        int venue_id PK
-        varchar venue_name
-        int city_id FK
-        varchar chain
-        text address
-    }
+### seats
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| seat_id | integer | PK | |
+| screen_id | integer | NOT NULL, FK screens, ON DELETE CASCADE | seat layout belongs to the screen |
+| row_label | text | NOT NULL, CHECK `^[A-Z]{1,2}$` | row letters |
+| seat_number | integer | NOT NULL, CHECK > 0 | |
+| seat_class | text | NOT NULL, CHECK in (CLASSIC, PRIME, RECLINER) | |
+| | | UNIQUE (screen_id, row_label, seat_number) | a seat is identified by its position inside a screen |
 
-    SCREENS {
-        int screen_id PK
-        int venue_id FK
-        varchar screen_name
-        varchar screen_type
-        int total_seats
-    }
+### movies
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| movie_id | integer | PK | |
+| title | text | NOT NULL | not unique: different languages/versions can share a title |
+| language | text | NOT NULL | |
+| certificate | text | NOT NULL, CHECK in (A, U, UA) | |
+| duration_min | integer | NOT NULL, CHECK > 0 | |
+| release_date | date | NOT NULL | |
 
-    SEATS {
-        int seat_id PK
-        int screen_id FK
-        char row_label
-        int seat_number
-        varchar seat_class
-    }
+### shows
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| show_id | integer | PK | |
+| movie_id | integer | NOT NULL, FK movies, ON DELETE RESTRICT | do not lose shows when a movie is removed |
+| screen_id | integer | NOT NULL, FK screens, ON DELETE RESTRICT | |
+| starts_at, ends_at | timestamptz | NOT NULL, CHECK ends_at > starts_at | the data carries a +05:30 offset, so `timestamptz` |
+| format | text | NOT NULL, CHECK in (2D, 3D, 4DX, IMAX) | |
+| base_price | numeric(8,2) | NOT NULL, CHECK > 0 | money: exact decimal, never float |
+| | | EXCLUDE USING gist (screen_id WITH =, tstzrange(starts_at, ends_at) WITH &&) | two shows on one screen can never overlap; needs `btree_gist` |
 
-    MOVIES {
-        int movie_id PK
-        varchar title
-        varchar language
-        varchar certificate
-        int duration_min
-        date release_date
-    }
+### customers
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| customer_id | integer | PK | |
+| full_name | text | NOT NULL | |
+| email | text | NOT NULL, UNIQUE | natural key, used for lookup |
+| phone | text | NOT NULL, UNIQUE, CHECK `^[0-9]{10}$` | text, not number: keeps leading zeros; sign-in key |
+| city_id | integer | NOT NULL, FK cities, ON DELETE RESTRICT | |
+| created_at | timestamptz | NOT NULL | |
 
-    SHOWS {
-        int show_id PK
-        int movie_id FK
-        int screen_id FK
-        timestamptz starts_at
-        timestamptz ends_at
-        varchar format
-        numeric base_price
-    }
+### offers
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| offer_code | text | PK | natural key; bookings refer to it |
+| description | text | NOT NULL | |
+| discount_pct | numeric(5,2) | NOT NULL, CHECK 0 < x <= 100 | |
+| max_discount | numeric(10,2) | NOT NULL, CHECK >= 0 | |
+| valid_from, valid_to | date | NOT NULL, CHECK valid_to >= valid_from | |
 
-    CUSTOMERS {
-        int customer_id PK
-        varchar full_name
-        varchar email UK
-        varchar phone UK
-        int city_id FK
-        timestamptz created_at
-    }
+### bookings
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| booking_id | integer | PK | |
+| booking_code | text | NOT NULL, UNIQUE, CHECK `^BMS[0-9A-F]{7}$` | support looks up by code; format seen in the data |
+| customer_id | integer | NOT NULL, FK customers, ON DELETE RESTRICT | keep financial history |
+| show_id | integer | NOT NULL, FK shows, ON DELETE RESTRICT | |
+| booked_at | timestamptz | NOT NULL | |
+| num_tickets | integer | NOT NULL, CHECK > 0 | |
+| ticket_amount, convenience_fee, fnb_amount, discount | numeric(10,2) | NOT NULL, CHECK >= 0 | |
+| offer_code | text | NULL allowed, FK offers, ON DELETE SET NULL | NULL when no offer was used (127,659 bookings) |
+| total_amount | numeric(10,2) | NOT NULL, CHECK total = ticket + fee + fnb - discount | money rule found in the data |
+| payment_method | text | NOT NULL, CHECK in (CARD, GIFT_CARD, NETBANKING, UPI, WALLET) | |
+| status | text | NOT NULL, CHECK in (CANCELLED, CONFIRMED, PAYMENT_FAILED, PENDING) | |
+| | | CHECK (offer_code IS NULL) = (discount = 0) | holds on all 150,094 rows |
+| | | UNIQUE (booking_id, show_id) | lets `booking_seats` prove its show matches the booking |
 
-    OFFERS {
-        varchar offer_code PK
-        varchar description
-        int discount_pct
-        numeric max_discount
-        date valid_from
-        date valid_to
-    }
+### booking_seats
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| booking_id | integer | NOT NULL | |
+| show_id | integer | NOT NULL, FK shows, ON DELETE RESTRICT | |
+| seat_id | integer | NOT NULL, FK seats, ON DELETE RESTRICT | |
+| price | numeric(8,2) | NOT NULL, CHECK >= 0 | |
+| | | PRIMARY KEY (show_id, seat_id) | a seat can be sold only once per show |
+| | | FK (booking_id, show_id) -> bookings, ON DELETE CASCADE | seats go away with their booking; show must match |
 
-    BOOKINGS {
-        int booking_id PK
-        varchar booking_code UK
-        int customer_id FK
-        int show_id FK
-        timestamptz booked_at
-        int num_tickets
-        numeric ticket_amount
-        numeric convenience_fee
-        numeric fnb_amount
-        varchar offer_code FK
-        numeric discount
-        numeric total_amount
-        varchar payment_method
-        varchar status
-    }
+### movie_reviews
+| Column | Type | Constraint | Why |
+|---|---|---|---|
+| review_id | integer | PK | |
+| movie_id | integer | NOT NULL, FK movies, ON DELETE CASCADE | reviews are meaningless without the movie |
+| customer_id | integer | NOT NULL, FK customers, ON DELETE CASCADE | |
+| rating | integer | NOT NULL, CHECK 1..10 | scale seen in the data |
+| review_text | text | NULL allowed | 16,162 of 32,510 reviews are rating-only |
+| created_at | timestamptz | NOT NULL | |
 
-    BOOKING_SEATS {
-        int booking_id PK,FK
-        int show_id FK,UK
-        int seat_id PK,FK,UK
-        numeric price
-    }
+## 3. Functional dependencies and normal form
 
-    MOVIE_REVIEWS {
-        int review_id PK
-        int movie_id FK
-        int customer_id FK
-        int rating
-        text review_text
-        timestamptz created_at
-    }
-```
-
----
-
-## 3. Comprehensive Data Dictionary
-
-### Table 1: `cities` (10 rows)
-Represents geographic municipal locations where cinemas operate.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `city_id` | `INT` | No | `PRIMARY KEY` | Unique municipal identifier. |
-| `city_name` | `VARCHAR(100)` | No | `NOT NULL`, `UNIQUE` | City name (e.g., Bengaluru, Mumbai). |
-| `state` | `VARCHAR(100)` | No | `NOT NULL` | State jurisdiction (e.g., Karnataka, Maharashtra). |
-
-### Table 2: `venues` (140 rows)
-Represents physical cinema properties/complexes.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `venue_id` | `INT` | No | `PRIMARY KEY` | Unique cinema venue identifier. |
-| `venue_name` | `VARCHAR(150)` | No | `NOT NULL` | Registered property name (e.g., PVR Forum Mumbai). |
-| `city_id` | `INT` | No | `NOT NULL`, `FK -> cities(city_id) ON DELETE RESTRICT` | City location. Restrict prevents deleting cities with active venues. |
-| `chain` | `VARCHAR(50)` | No | `NOT NULL`, `CHECK (chain IN ('Cinepolis', 'INOX', 'Independent', 'Miraj', 'PVR'))` | Commercial operating brand. |
-| `address` | `TEXT` | No | `NOT NULL` | Street address of the complex. |
-
-### Table 3: `screens` (490 rows)
-Represents individual auditoriums inside a cinema complex.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `screen_id` | `INT` | No | `PRIMARY KEY` | Unique auditorium identifier. |
-| `venue_id` | `INT` | No | `NOT NULL`, `FK -> venues(venue_id) ON DELETE CASCADE` | Parent cinema. Cascade deletes screens if a venue is demolished. |
-| `screen_name` | `VARCHAR(50)` | No | `NOT NULL` | Human-readable name (e.g., Audi 1, Audi 2). |
-| `screen_type` | `VARCHAR(20)` | No | `NOT NULL`, `CHECK (screen_type IN ('4DX', 'GOLD', 'IMAX', 'STANDARD'))` | Projection/experience tier. |
-| `total_seats` | `INT` | No | `NOT NULL`, `CHECK (total_seats > 0 AND total_seats <= 1000)` | Physical auditorium capacity (denormalized cache). |
-
-### Table 4: `seats` (94,056 rows)
-Represents individual physical seat units in an auditorium.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `seat_id` | `INT` | No | `PRIMARY KEY` | Unique physical seat identifier across the system. |
-| `screen_id` | `INT` | No | `NOT NULL`, `FK -> screens(screen_id) ON DELETE CASCADE` | Auditorium location. |
-| `row_label` | `VARCHAR(2)` | No | `NOT NULL`, `CHECK (row_label ~ '^[A-P]$')` | Alphabetical row identifier (A through P in seed data). |
-| `seat_number` | `INT` | No | `NOT NULL`, `CHECK (seat_number > 0 AND seat_number <= 100)` | Numerical position within the row. |
-| `seat_class` | `VARCHAR(20)` | No | `NOT NULL`, `CHECK (seat_class IN ('CLASSIC', 'PRIME', 'RECLINER'))` | Seating category determining base pricing. |
-| *Composite* | — | — | `UNIQUE (screen_id, row_label, seat_number)` | **Natural Key:** Prohibits duplicate seat labels within the same auditorium. |
-
-### Table 5: `movies` (300 rows)
-Represents films scheduled for theatrical screening.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `movie_id` | `INT` | No | `PRIMARY KEY` | Unique film title identifier. |
-| `title` | `VARCHAR(255)` | No | `NOT NULL` | Official movie release title. |
-| `language` | `VARCHAR(50)` | No | `NOT NULL` | Primary spoken audio track (e.g., Hindi, Telugu, Tamil). |
-| `certificate` | `VARCHAR(10)` | No | `NOT NULL`, `CHECK (certificate IN ('A', 'U', 'UA'))` | CBFC statutory rating certificate. |
-| `duration_min` | `INT` | No | `NOT NULL`, `CHECK (duration_min > 0 AND duration_min <= 400)` | Runtime duration in minutes. |
-| `release_date` | `DATE` | No | `NOT NULL` | Commercial theatrical release date. |
-
-### Table 6: `shows` (160,034 rows)
-Represents scheduled movie screenings in a specific auditorium.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `show_id` | `INT` | No | `PRIMARY KEY` | Unique screening identifier. |
-| `movie_id` | `INT` | No | `NOT NULL`, `FK -> movies(movie_id) ON DELETE RESTRICT` | Film being screened. Restrict prevents deleting movies with active shows. |
-| `screen_id` | `INT` | No | `NOT NULL`, `FK -> screens(screen_id) ON DELETE RESTRICT` | Auditorium being booked. |
-| `starts_at` | `TIMESTAMPTZ` | No | `NOT NULL` | Scheduled showtime commencement with time-zone. |
-| `ends_at` | `TIMESTAMPTZ` | No | `NOT NULL`, `CHECK (starts_at < ends_at)` | Scheduled showtime completion. |
-| `format` | `VARCHAR(20)` | No | `NOT NULL`, `CHECK (format IN ('2D', '3D', '4DX', 'IMAX'))` | Projection format. |
-| `base_price` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (base_price >= 0)` | Base ticket price before category multipliers. |
-| *Exclusion* | — | — | `EXCLUDE USING gist (screen_id WITH =, tsrange(starts_at, ends_at) WITH &&)` | **Non-Overlap Invariant:** Prohibits two shows overlapping on the same screen. |
-
-### Table 7: `customers` (40,000 rows)
-Represents registered platform end-users.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `customer_id` | `INT` | No | `PRIMARY KEY` | Unique user account identifier. |
-| `full_name` | `VARCHAR(150)` | No | `NOT NULL` | Customer's full name. |
-| `email` | `VARCHAR(255)` | No | `NOT NULL`, `UNIQUE` | Email address (natural login identifier). |
-| `phone` | `VARCHAR(15)` | No | `NOT NULL`, `UNIQUE`, `CHECK (phone ~ '^[0-9]{10}$')` | 10-digit mobile number for OTP sign-in (`R23`). |
-| `city_id` | `INT` | No | `NOT NULL`, `FK -> cities(city_id) ON DELETE RESTRICT` | Home city location. |
-| `created_at` | `TIMESTAMPTZ` | No | `NOT NULL` | Account registration timestamp. |
-
-### Table 8: `offers` (25 rows)
-Represents promotional partner vouchers and discount schemes.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `offer_code` | `VARCHAR(50)` | No | `PRIMARY KEY` | Alphanumeric coupon redemption code. |
-| `description` | `VARCHAR(255)` | No | `NOT NULL` | Promotion summary terms. |
-| `discount_pct` | `INT` | No | `NOT NULL`, `CHECK (discount_pct > 0 AND discount_pct <= 100)` | Percentage reduction applied to ticket amounts. |
-| `max_discount` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (max_discount >= 0)` | Maximum currency cap on discount. |
-| `valid_from` | `DATE` | No | `NOT NULL` | Campaign start date. |
-| `valid_to` | `DATE` | No | `NOT NULL`, `CHECK (valid_from <= valid_to)` | Campaign expiration date. |
-
-### Table 9: `bookings` (150,094 rows)
-Represents financial checkout transactions.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `booking_id` | `INT` | No | `PRIMARY KEY` | Internal transactional primary key. |
-| `booking_code` | `VARCHAR(20)` | No | `NOT NULL`, `UNIQUE`, `CHECK (booking_code ~ '^BMS[0-9A-F]{7}$')` | Alphanumeric reservation code used by customer support (`R04`). |
-| `customer_id` | `INT` | No | `NOT NULL`, `FK -> customers(customer_id) ON DELETE RESTRICT` | Purchasing customer account. |
-| `show_id` | `INT` | No | `NOT NULL`, `FK -> shows(show_id) ON DELETE RESTRICT` | Reserved screening. |
-| `booked_at` | `TIMESTAMPTZ` | No | `NOT NULL` | Timestamp of reservation creation. |
-| `num_tickets` | `INT` | No | `NOT NULL`, `CHECK (num_tickets > 0)` | Number of seats reserved in transaction. |
-| `ticket_amount` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (ticket_amount >= 0)` | Sum of seat ticket prices. |
-| `convenience_fee`| `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (convenience_fee >= 0)` | Online processing fee (typically 10% of ticket amount). |
-| `fnb_amount` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (fnb_amount >= 0)` | Food & beverage total. |
-| `offer_code` | `VARCHAR(50)` | **Yes** | `FK -> offers(offer_code) ON DELETE SET NULL` | Applied discount voucher. Empty when booking without discounts. |
-| `discount` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (discount >= 0)` | Applied discount currency amount. |
-| `total_amount` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (total_amount >= 0)` | Grand total billed to customer. |
-| `payment_method`| `VARCHAR(30)` | No | `NOT NULL`, `CHECK (payment_method IN ('CARD', 'GIFT_CARD', 'NETBANKING', 'UPI', 'WALLET'))` | Settlement channel. |
-| `status` | `VARCHAR(30)` | No | `NOT NULL`, `CHECK (status IN ('CANCELLED', 'CONFIRMED', 'PAYMENT_FAILED', 'PENDING'))` | Lifecycle state of reservation. |
-| *Balance Rule* | — | — | `CHECK (total_amount = ticket_amount + convenience_fee + fnb_amount - discount)` | **Integrity Check:** Guarantees arithmetic invoice consistency. |
-
-### Table 10: `booking_seats` (300,389 rows)
-Represents seat inventory reserved under a booking.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `booking_id` | `INT` | No | `NOT NULL`, `FK -> bookings(booking_id) ON DELETE CASCADE` | Associated checkout. Cascade purges seats when booking is deleted. |
-| `show_id` | `INT` | No | `NOT NULL`, `FK -> shows(show_id) ON DELETE RESTRICT` | Redundant foreign key providing direct indexing for layout availability (`R03`). |
-| `seat_id` | `INT` | No | `NOT NULL`, `FK -> seats(seat_id) ON DELETE RESTRICT` | Specific physical seat. |
-| `price` | `NUMERIC(10, 2)` | No | `NOT NULL`, `CHECK (price >= 0)` | Price charged for this individual seat. |
-| *Primary Key* | — | — | `PRIMARY KEY (booking_id, seat_id)` | Compound primary key uniquely identifying a seat in a checkout. |
-| *Uniqueness* | — | — | `UNIQUE (show_id, seat_id)` | **Anti-Double-Booking Invariant:** Prohibits selling the same seat twice for one show. |
-
-### Table 11: `movie_reviews` (32,510 rows)
-Represents user ratings and critical reviews for released films.
-| Column | PostgreSQL Type | Nullable | Constraints | Semantic Description & Justification |
-|---|---|---|---|---|
-| `review_id` | `INT` | No | `PRIMARY KEY` | Unique review identifier. |
-| `movie_id` | `INT` | No | `NOT NULL`, `FK -> movies(movie_id) ON DELETE CASCADE` | Reviewed movie. Cascade deletes reviews if movie is purged. |
-| `customer_id` | `INT` | No | `NOT NULL`, `FK -> customers(customer_id) ON DELETE CASCADE` | Author customer. |
-| `rating` | `INT` | No | `NOT NULL`, `CHECK (rating >= 1 AND rating <= 10)` | Numeric rating scale from 1 (poor) to 10 (masterpiece). |
-| `review_text` | `TEXT` | **Yes** | None | Optional text review commentary. Nullable when user provides a star rating only. |
-| `created_at` | `TIMESTAMPTZ` | No | `NOT NULL` | Submission timestamp. |
-| *Uniqueness* | — | — | `UNIQUE (movie_id, customer_id)` | Guarantees at most one review per customer per movie. |
-
----
-
-## 4. Normalization Analysis (1NF through BCNF)
-
-### Functional Dependencies (FDs) by Relation
-1. **`cities`**: `city_id -> city_name, state` (Candidate Key: `{city_id}`).
-2. **`venues`**: `venue_id -> venue_name, city_id, chain, address` (Candidate Key: `{venue_id}`).
-3. **`screens`**: `screen_id -> venue_id, screen_name, screen_type, total_seats` (Candidate Key: `{screen_id}`).
-4. **`seats`**: `seat_id -> screen_id, row_label, seat_number, seat_class` AND `{screen_id, row_label, seat_number} -> seat_id, seat_class` (Candidate Keys: `{seat_id}`, `{screen_id, row_label, seat_number}`).
-5. **`movies`**: `movie_id -> title, language, certificate, duration_min, release_date` (Candidate Key: `{movie_id}`).
-6. **`shows`**: `show_id -> movie_id, screen_id, starts_at, ends_at, format, base_price` (Candidate Key: `{show_id}`).
-7. **`customers`**: `customer_id -> full_name, email, phone, city_id, created_at` AND `email -> customer_id, ...` AND `phone -> customer_id, ...` (Candidate Keys: `{customer_id}`, `{email}`, `{phone}`).
-8. **`offers`**: `offer_code -> description, discount_pct, max_discount, valid_from, valid_to` (Candidate Key: `{offer_code}`).
-9. **`bookings`**: `booking_id -> booking_code, customer_id, show_id, booked_at, num_tickets, ticket_amount, convenience_fee, fnb_amount, offer_code, discount, total_amount, payment_method, status` AND `booking_code -> booking_id, ...` (Candidate Keys: `{booking_id}`, `{booking_code}`).
-10. **`booking_seats`**: `{booking_id, seat_id} -> show_id, price` AND `{show_id, seat_id} -> booking_id, price` (Candidate Keys: `{booking_id, seat_id}`, `{show_id, seat_id}`).
-11. **`movie_reviews`**: `review_id -> movie_id, customer_id, rating, review_text, created_at` AND `{movie_id, customer_id} -> review_id, rating, review_text, created_at` (Candidate Keys: `{review_id}`, `{movie_id, customer_id}`).
-
-### Normal Form Evaluation
-- **1NF Compliance:** All attributes are atomic (scalar values). No multi-valued repeating groups or comma-separated lists exist.
-- **2NF Compliance:** Every non-prime attribute is fully functionally dependent on the entire candidate key. No partial dependencies exist on compound keys.
-- **3NF & BCNF Compliance:** For every non-trivial functional dependency $X \rightarrow Y$, the determinant $X$ is a superkey. Therefore, the core schema strictly satisfies **Boyce-Codd Normal Form (BCNF)**.
-
-### Analysis of Deliberately Denormalized / Redundant Attributes
-
-While the logical model adheres to BCNF, four specific attributes contain calculated or transitive redundancies that are critically justified for high-scale enterprise operations:
-
-| Entity & Attribute | Redundant With | Technical & Business Justification for Retention |
+| Table | Functional dependencies | Normal form |
 |---|---|---|
-| `screens.total_seats` | `COUNT(seats.seat_id)` | **Eliminates High-Frequency Aggregate Joins:** During seat search and cinema dashboards (`R07`, `R25`), reading `screens.total_seats` avoids scanning and aggregating tens of thousands of rows from `seats` for every catalog request. |
-| `bookings.ticket_amount` | `SUM(booking_seats.price)` | **Financial Auditability & Mutation Safety:** Preserves the transactional balance sheet. When bookings are cancelled or expire (`W04`), rows in `booking_seats` are deleted, yet `ticket_amount` in `bookings` must persist permanently to track historical gross bookings and cancellation ratios (`R16`). |
-| `booking_seats.show_id` | `bookings.show_id` | **Enforces Declarative Double-Booking Invariant:** Having `show_id` directly in `booking_seats` allows PostgreSQL to enforce the engine-level constraint `UNIQUE (show_id, seat_id)`. Without it, preventing double booking would require cross-table triggers, destroying write throughput on `W01`/`W02`. Furthermore, it accelerates layout rendering (`R03`) without an extra table join. |
-| `shows.ends_at` | `shows.starts_at + movies.duration_min` | **Enables GiST Temporal Indexing & Scheduling Gap Verification:** Essential for the `EXCLUDE USING gist` constraint to prevent showtime collisions. It also allows simple interval math (`s2.starts_at - s1.ends_at`) for cleaning gap audits (`R10`) without dynamically recalculating durations from joined movie rows. |
+| cities | city_id -> city_name, state; city_name -> city_id | BCNF |
+| venues | venue_id -> venue_name, city_id, chain, address | BCNF |
+| screens | screen_id -> all; (venue_id, screen_name) -> screen_id | BCNF |
+| seats | seat_id -> all; (screen_id, row_label, seat_number) -> seat_id | BCNF |
+| movies | movie_id -> all | BCNF |
+| shows | show_id -> all; (screen_id, starts_at) -> show_id | BCNF |
+| customers | customer_id -> all; email -> customer_id; phone -> customer_id | BCNF |
+| offers | offer_code -> all | BCNF |
+| bookings | booking_id -> all; booking_code -> booking_id; (ticket_amount, convenience_fee, fnb_amount, discount) -> total_amount | 2NF; strictly not 3NF because of the stored total (see section 4) |
+| booking_seats | (show_id, seat_id) -> booking_id, price; booking_id -> show_id | 3NF but not BCNF: `booking_id -> show_id` has a non-key determinant, but `show_id` is part of the key |
+| movie_reviews | review_id -> all | BCNF |
 
----
+## 4. Derived or redundant columns
 
-## 5. Declarative Invariant Enforcement
+| Column | Derived from | Kept? | Reason |
+|---|---|---|---|
+| screens.total_seats | count of rows in `seats` | Yes | 0 mismatches on all 490 screens (check 5). Avoids a join and count for the occupancy queries (R07, R25). Must be maintained when seats change |
+| bookings.ticket_amount | sum of `booking_seats.price` | Yes | 0 mismatches where seat rows exist (check 4). Cancelled and payment-failed bookings keep their amount but have no seat rows, so it cannot be derived for them |
+| bookings.total_amount | amounts in the same row | Yes | audit value at time of sale; enforced by a CHECK so it cannot drift |
+| booking_seats.show_id | bookings.show_id | Yes | needed in the primary key to enforce one sale per seat per show; the composite FK guarantees it equals the booking's show |
+| shows.ends_at | starts_at + movie duration | Yes | **not** purely derived: no show equals starts_at + duration (0 of 160,034, check 6). TODO: write the extra minutes found by the query (likely a fixed buffer) |
 
-### 1. Preventing Duplicate Seat Bookings (Double Allocation)
-In cinema ticketing, the most catastrophic failure is selling the same auditorium seat to two different customers for the same show.
-- **Enforcement Mechanism:** The compound constraint `UNIQUE (show_id, seat_id)` on `booking_seats`.
-- **Database Engine Operation:** PostgreSQL enforces this constraint via a unique B-tree index. When transaction $T_1$ inserts `(show_id=144446, seat_id=31535)`, it acquires an exclusive tuple lock. If a concurrent transaction $T_2$ attempts to insert the identical pair, PostgreSQL detects the key conflict in the index leaf page, aborting $T_2$ with a `unique_violation` (`SQLSTATE 23505`).
-- **Cancellation Behavior:** When a booking is cancelled or payment fails, its rows in `booking_seats` are deleted. This atomically frees the `(show_id, seat_id)` pair in the index, allowing subsequent transactions to book the seat without race conditions.
+## 5. Indexes that exist (created by PostgreSQL for constraints only)
 
-### 2. Preventing Overlapping Shows on the Same Screen
-A cinema auditorium cannot physically project two films simultaneously.
-- **Enforcement Mechanism:** PostgreSQL **Exclusion Constraint** utilizing the `btree_gist` extension:
-  ```sql
-  CREATE EXTENSION IF NOT EXISTS btree_gist;
+- Primary key index on every table (11).
+- UNIQUE indexes: `cities(city_name)`, `screens(venue_id, screen_name)`, `seats(screen_id, row_label, seat_number)`, `customers(email)`, `customers(phone)`, `bookings(booking_code)`, `bookings(booking_id, show_id)`.
+- GiST index from the exclusion constraint `shows_no_overlap` on `shows(screen_id, tstzrange(starts_at, ends_at))`.
+- No other index. In particular there is no index on foreign-key columns such as `bookings.customer_id` or `shows.movie_id`, so the Phase 3 baseline reflects an untuned database.
 
-  ALTER TABLE shows ADD CONSTRAINT no_overlapping_shows
-    EXCLUDE USING gist (
-      screen_id WITH =,
-      tsrange(starts_at, ends_at) WITH &&
-    );
-  ```
-- **Database Engine Operation:** A standard `CHECK` constraint can only evaluate values within a single tuple. To enforce constraints across multiple rows, PostgreSQL uses Generalized Search Tree (GiST) indexing over range types (`tsrange`).
-- The condition `screen_id WITH =` matches shows sharing the same auditorium.
-- The condition `tsrange(starts_at, ends_at) WITH &&` detects temporal overlap (`&&` range intersection).
-- Any attempt to insert or reschedule a show that intersects an existing screening on the same screen is rejected at the engine level (`exclusion_violation`, `SQLSTATE 23P01`).
+## 6. Load results
 
----
+| Table | Rows loaded | Expected |
+|---|---|---|
+| cities | 10 | 10 |
+| venues | 140 | 140 |
+| screens | 490 | 490 |
+| seats | 94,056 | 94,056 |
+| movies | 300 | 300 |
+| shows | 160,034 | 160,034 |
+| customers | 40,000 | 40,000 |
+| offers | 25 | 25 |
+| bookings | 150,094 | 150,094 |
+| booking_seats | 300,389 | 300,389 |
+| movie_reviews | 32,510 | 32,510 |
 
-## 6. Seed Data Integrity Audit & Verification Results
+## 7. Integrity checks
 
-A comprehensive verification script was executed against all 11 seed CSV exports to confirm that our declarative constraints accept 100% of the production data without errors.
+Script: `docs/evidence/integrity_checks.sql`, output: `docs/evidence/integrity_results.txt`.
 
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                        Seed Data Verification Log                          │
-├─────────────────────────────────────────────────┬──────────────────────────┤
-│ Integrity Verification Check                    │ Result                   │
-├─────────────────────────────────────────────────┼──────────────────────────┤
-│ 1. Booked seats belong to the show's screen     │ 0 Mismatches (100% Valid)│
-│ 2. Active bookings ticket count vs seats count  │ 0 Mismatches (100% Valid)│
-│ 3. Overlapping shows on identical screen        │ 0 Overlaps (100% Valid)  │
-│ 4. Total amount formula balance (bookings.csv)  │ 0 Errors (100% Valid)    │
-│ 5. Booking code format regex (^BMS[0-9A-F]{7}$) │ 0 Invalid (100% Valid)   │
-│ 6. Seat row labels domain ([A-P])               │ 0 Invalid (100% Valid)   │
-│ 7. Customer phone regex (10 digits)             │ 0 Invalid (100% Valid)   │
-│ 8. Review rating domain ([1-10])                │ 0 Invalid (100% Valid)   │
-└─────────────────────────────────────────────────┴──────────────────────────┘
-```
+1. Booked seats on a screen different from the show's screen: **0**.
+2. `num_tickets` against seat rows, per status:
 
-### Table Row Counts Confirmed
-- `cities`: 10 rows
-- `venues`: 140 rows
-- `screens`: 490 rows
-- `seats`: 94,056 rows
-- `movies`: 300 rows
-- `shows`: 160,034 rows
-- `customers`: 40,000 rows
-- `offers`: 25 rows
-- `bookings`: 150,094 rows
-- `booking_seats`: 300,389 rows
-- `movie_reviews`: 32,510 rows
+| status | bookings | tickets match seat rows | no seat rows |
+|---|---|---|---|
+| CANCELLED | 8,910 | 0 | 8,910 |
+| CONFIRMED | 133,568 | 133,568 | 0 |
+| PAYMENT_FAILED | 7,606 | 0 | 7,606 |
+| PENDING | 10 | 10 | 0 |
 
-### Data Findings & Nullability Profile
-- Across the entire production dataset, **only two columns contain NULL values**:
-  1. `bookings.offer_code` (127,659 nulls): Natural omission when customers checkout without promotional coupons.
-  2. `movie_reviews.review_text` (16,162 nulls): Natural omission when customers provide star ratings without textual reviews.
-- All other attributes across all 11 tables are strictly `NOT NULL`.
-- In `bookings`, all 8,910 `CANCELLED` and 7,606 `PAYMENT_FAILED` records have 0 associated rows in `booking_seats`, verifying that cancelled/failed reservations correctly release their seat locks back into available inventory.
+   Seats are held only for CONFIRMED and PENDING bookings. A cancelled or failed booking releases its seats, which is why it has no `booking_seats` rows.
+3. Overlapping shows on one screen: **0**.
+4. `ticket_amount` differs from the sum of seat prices: **0** mismatches.
+5. `screens.total_seats` differs from the number of seats: **0** mismatches.
+6. `ends_at - starts_at` equal to movie duration: **0** of 160,034.
+7. `offer_code` empty: 127,659 bookings, all with discount 0. Offer used: 22,435 bookings, all with a discount.
+8. Reviews without text: 16,162 of 32,510.
+
+## 8. Data problems found
+
+- A fourth booking status, `PAYMENT_FAILED` (7,606 rows), is present in the data. My first CHECK allowed only three statuses and the load of `bookings` failed; the constraint was wrong, not the data. Fixed by taking the list from the data.
+- Cancelled and payment-failed bookings keep full money amounts but have no seat rows.
+- `shows.ends_at` is not start plus movie duration.
+- All other constraints (money rule, rating 1..10, row labels, phone and booking-code formats, no show overlap, composite foreign key) accepted every row.

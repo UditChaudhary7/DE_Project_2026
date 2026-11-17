@@ -123,6 +123,10 @@ CREATE TABLE movie_reviews (
     created_at   timestamptz NOT NULL
 );
 
--- TODO after inspecting the data (SELECT DISTINCT ...): add value-list CHECKs
--- for venues.chain, screens.screen_type, shows.format, movies.certificate,
--- bookings.payment_method. Do not guess the lists.
+-- Value-list CHECKs (lists taken from SELECT DISTINCT on the seed data)
+ALTER TABLE venues   ADD CONSTRAINT venues_chain_chk  CHECK (chain IN ('Cinepolis','Independent','INOX','Miraj','PVR'));
+ALTER TABLE screens  ADD CONSTRAINT screens_type_chk  CHECK (screen_type IN ('4DX','GOLD','IMAX','STANDARD'));
+ALTER TABLE shows    ADD CONSTRAINT shows_format_chk  CHECK (format IN ('2D','3D','4DX','IMAX'));
+ALTER TABLE movies   ADD CONSTRAINT movies_cert_chk   CHECK (certificate IN ('A','U','UA'));
+ALTER TABLE bookings ADD CONSTRAINT bookings_pay_chk  CHECK (payment_method IN ('CARD','GIFT_CARD','NETBANKING','UPI','WALLET'));
+ALTER TABLE bookings ADD CONSTRAINT bookings_offer_discount_rule CHECK ((offer_code IS NULL) = (discount = 0));
