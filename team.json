@@ -3,7 +3,7 @@
   "group_lead": {
     "name": "Granth Gupta",
     "enrollment_no": "2501010170",
-    "github": "YOUR_GITHUB_USERNAME"
+    "github": "Granth2"
   },
   "members": [
     {
@@ -14,14 +14,13 @@
     {
       "name": "Tirth Dev Gera",
       "enrollment_no": "2501010596",
-      "github": "GITHUB_3"
+      "github": "tirthgera17"
     },
     {
-      "name": "Yyuvraj Singh",
+      "name": "Yuvraj Singh",
       "enrollment_no": "2501010538",
       "github": "YuvrajSingh-d"
     }
   ],
-  "postgres_version": "18.4 (Postgres.app)",
-  "laptop_used_for_benchmarks": "Apple Silicon Mac"
+  "laptop_used_for_benchmarks": "Macbook M4 pro"
 }
