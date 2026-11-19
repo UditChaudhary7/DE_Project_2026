@@ -1,0 +1,42 @@
+=== R13 run 1 ===
+Nested Loop Anti Join  (cost=0.29..9.69 rows=7 width=31) (actual time=0.049..0.101 rows=7.00 loops=1)
+  Buffers: shared hit=39 read=13
+  ->  Seq Scan on offers o  (cost=0.00..1.25 rows=25 width=31) (actual time=0.003..0.003 rows=25.00 loops=1)
+        Buffers: shared hit=1
+  ->  Index Only Scan using idx_bookings_offer_code on bookings b  (cost=0.29..26.21 rows=1253 width=10) (actual time=0.004..0.004 rows=0.72 loops=25)
+        Index Cond: (offer_code = (o.offer_code)::text)
+        Heap Fetches: 0
+        Index Searches: 25
+        Buffers: shared hit=38 read=13
+Planning:
+  Buffers: shared hit=331
+Planning Time: 0.444 ms
+Execution Time: 0.119 ms
+=== R13 run 2 ===
+Nested Loop Anti Join  (cost=0.29..9.69 rows=7 width=31) (actual time=0.034..0.074 rows=7.00 loops=1)
+  Buffers: shared hit=52
+  ->  Seq Scan on offers o  (cost=0.00..1.25 rows=25 width=31) (actual time=0.003..0.004 rows=25.00 loops=1)
+        Buffers: shared hit=1
+  ->  Index Only Scan using idx_bookings_offer_code on bookings b  (cost=0.29..26.21 rows=1253 width=10) (actual time=0.003..0.003 rows=0.72 loops=25)
+        Index Cond: (offer_code = (o.offer_code)::text)
+        Heap Fetches: 0
+        Index Searches: 25
+        Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=331
+Planning Time: 0.449 ms
+Execution Time: 0.093 ms
+=== R13 run 3 ===
+Nested Loop Anti Join  (cost=0.29..9.69 rows=7 width=31) (actual time=0.040..0.088 rows=7.00 loops=1)
+  Buffers: shared hit=52
+  ->  Seq Scan on offers o  (cost=0.00..1.25 rows=25 width=31) (actual time=0.004..0.005 rows=25.00 loops=1)
+        Buffers: shared hit=1
+  ->  Index Only Scan using idx_bookings_offer_code on bookings b  (cost=0.29..26.21 rows=1253 width=10) (actual time=0.003..0.003 rows=0.72 loops=25)
+        Index Cond: (offer_code = (o.offer_code)::text)
+        Heap Fetches: 0
+        Index Searches: 25
+        Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=331
+Planning Time: 0.461 ms
+Execution Time: 0.110 ms
