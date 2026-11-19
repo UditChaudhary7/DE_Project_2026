@@ -1,0 +1,81 @@
+=== R12 run 1 ===
+Sort  (cost=16991.05..17102.35 rows=44523 width=16) (actual time=80.353..80.372 rows=981.00 loops=1)
+  Sort Key: (count(*)) DESC, b.customer_id
+  Sort Method: quicksort  Memory: 55kB
+  Buffers: shared hit=3606, temp read=120 written=282
+  ->  HashAggregate  (cost=11883.75..13553.37 rows=44523 width=16) (actual time=67.566..80.210 rows=981.00 loops=1)
+        Group Key: b.customer_id, s.movie_id
+        Filter: (count(*) > 1)
+        Batches: 5  Memory Usage: 8249kB  Disk Usage: 1584kB
+        Rows Removed by Filter: 131602
+        Buffers: shared hit=3600, temp read=120 written=282
+        ->  Hash Join  (cost=5737.79..10881.99 rows=133569 width=8) (actual time=17.127..49.208 rows=133568.00 loops=1)
+              Hash Cond: (s.show_id = b.show_id)
+              Buffers: shared hit=3600
+              ->  Seq Scan on shows s  (cost=0.00..3008.34 rows=160034 width=8) (actual time=0.004..3.910 rows=160034.00 loops=1)
+                    Buffers: shared hit=1408
+              ->  Hash  (cost=4068.18..4068.18 rows=133569 width=8) (actual time=17.009..17.009 rows=133568.00 loops=1)
+                    Buckets: 262144  Batches: 1  Memory Usage: 7266kB
+                    Buffers: shared hit=2192
+                    ->  Seq Scan on bookings b  (cost=0.00..4068.18 rows=133569 width=8) (actual time=0.008..10.407 rows=133568.00 loops=1)
+                          Filter: ((status)::text = 'CONFIRMED'::text)
+                          Rows Removed by Filter: 16526
+                          Buffers: shared hit=2192
+Planning:
+  Buffers: shared hit=354
+Planning Time: 0.659 ms
+Execution Time: 80.969 ms
+=== R12 run 2 ===
+Sort  (cost=16991.05..17102.35 rows=44523 width=16) (actual time=75.342..75.362 rows=981.00 loops=1)
+  Sort Key: (count(*)) DESC, b.customer_id
+  Sort Method: quicksort  Memory: 55kB
+  Buffers: shared hit=3606, temp read=120 written=282
+  ->  HashAggregate  (cost=11883.75..13553.37 rows=44523 width=16) (actual time=64.794..75.208 rows=981.00 loops=1)
+        Group Key: b.customer_id, s.movie_id
+        Filter: (count(*) > 1)
+        Batches: 5  Memory Usage: 8249kB  Disk Usage: 1584kB
+        Rows Removed by Filter: 131602
+        Buffers: shared hit=3600, temp read=120 written=282
+        ->  Hash Join  (cost=5737.79..10881.99 rows=133569 width=8) (actual time=17.482..47.893 rows=133568.00 loops=1)
+              Hash Cond: (s.show_id = b.show_id)
+              Buffers: shared hit=3600
+              ->  Seq Scan on shows s  (cost=0.00..3008.34 rows=160034 width=8) (actual time=0.003..3.911 rows=160034.00 loops=1)
+                    Buffers: shared hit=1408
+              ->  Hash  (cost=4068.18..4068.18 rows=133569 width=8) (actual time=17.358..17.359 rows=133568.00 loops=1)
+                    Buckets: 262144  Batches: 1  Memory Usage: 7266kB
+                    Buffers: shared hit=2192
+                    ->  Seq Scan on bookings b  (cost=0.00..4068.18 rows=133569 width=8) (actual time=0.014..10.543 rows=133568.00 loops=1)
+                          Filter: ((status)::text = 'CONFIRMED'::text)
+                          Rows Removed by Filter: 16526
+                          Buffers: shared hit=2192
+Planning:
+  Buffers: shared hit=354
+Planning Time: 0.635 ms
+Execution Time: 75.915 ms
+=== R12 run 3 ===
+Sort  (cost=16991.05..17102.35 rows=44523 width=16) (actual time=65.465..65.484 rows=981.00 loops=1)
+  Sort Key: (count(*)) DESC, b.customer_id
+  Sort Method: quicksort  Memory: 55kB
+  Buffers: shared hit=3606, temp read=120 written=282
+  ->  HashAggregate  (cost=11883.75..13553.37 rows=44523 width=16) (actual time=55.997..65.337 rows=981.00 loops=1)
+        Group Key: b.customer_id, s.movie_id
+        Filter: (count(*) > 1)
+        Batches: 5  Memory Usage: 8249kB  Disk Usage: 1584kB
+        Rows Removed by Filter: 131602
+        Buffers: shared hit=3600, temp read=120 written=282
+        ->  Hash Join  (cost=5737.79..10881.99 rows=133569 width=8) (actual time=17.013..41.042 rows=133568.00 loops=1)
+              Hash Cond: (s.show_id = b.show_id)
+              Buffers: shared hit=3600
+              ->  Seq Scan on shows s  (cost=0.00..3008.34 rows=160034 width=8) (actual time=0.003..3.739 rows=160034.00 loops=1)
+                    Buffers: shared hit=1408
+              ->  Hash  (cost=4068.18..4068.18 rows=133569 width=8) (actual time=16.900..16.900 rows=133568.00 loops=1)
+                    Buckets: 262144  Batches: 1  Memory Usage: 7266kB
+                    Buffers: shared hit=2192
+                    ->  Seq Scan on bookings b  (cost=0.00..4068.18 rows=133569 width=8) (actual time=0.009..10.137 rows=133568.00 loops=1)
+                          Filter: ((status)::text = 'CONFIRMED'::text)
+                          Rows Removed by Filter: 16526
+                          Buffers: shared hit=2192
+Planning:
+  Buffers: shared hit=354
+Planning Time: 0.686 ms
+Execution Time: 66.023 ms

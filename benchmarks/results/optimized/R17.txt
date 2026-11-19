@@ -1,0 +1,105 @@
+=== R17 run 1 ===
+Sort  (cost=10096.18..10096.57 rows=156 width=17) (actual time=28.763..28.765 rows=28.00 loops=1)
+  Sort Key: se.row_label, se.seat_number
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=2922
+  ->  Hash Right Anti Join  (cost=4035.26..10090.50 rows=156 width=17) (actual time=28.733..28.737 rows=28.00 loops=1)
+        Hash Cond: (bs.seat_id = se.seat_id)
+        Buffers: shared hit=2916
+        ->  Hash Join  (cost=3769.48..9529.91 rows=93309 width=4) (actual time=5.135..26.083 rows=109867.00 loops=1)
+              Hash Cond: (bs.show_id = s.show_id)
+              Buffers: shared hit=2912
+              ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=8) (actual time=0.003..6.600 rows=300389.00 loops=1)
+                    Buffers: shared hit=1968
+              ->  Hash  (cost=3148.09..3148.09 rows=49711 width=4) (actual time=5.098..5.099 rows=48990.00 loops=1)
+                    Buckets: 65536  Batches: 1  Memory Usage: 2235kB
+                    Buffers: shared hit=944
+                    ->  Bitmap Heap Scan on shows s  (cost=994.43..3148.09 rows=49711 width=4) (actual time=1.458..3.414 rows=48990.00 loops=1)
+                          Recheck Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                          Heap Blocks: exact=416
+                          Buffers: shared hit=944
+                          ->  Bitmap Index Scan on idx_shows_movie_id_starts_at  (cost=0.00..982.00 rows=49711 width=0) (actual time=1.433..1.433 rows=48990.00 loops=1)
+                                Index Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                                Index Searches: 86
+                                Buffers: shared hit=528
+        ->  Hash  (cost=263.73..263.73 rows=164 width=17) (actual time=0.017..0.017 rows=40.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 11kB
+              Buffers: shared hit=4
+              ->  Index Scan using uq_screen_seat_position on seats se  (cost=0.29..263.73 rows=164 width=17) (actual time=0.007..0.010 rows=40.00 loops=1)
+                    Index Cond: (screen_id = 101)
+                    Index Searches: 1
+                    Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=351
+Planning Time: 0.748 ms
+Execution Time: 28.799 ms
+=== R17 run 2 ===
+Sort  (cost=10096.18..10096.57 rows=156 width=17) (actual time=28.751..28.753 rows=28.00 loops=1)
+  Sort Key: se.row_label, se.seat_number
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=2922
+  ->  Hash Right Anti Join  (cost=4035.26..10090.50 rows=156 width=17) (actual time=28.714..28.718 rows=28.00 loops=1)
+        Hash Cond: (bs.seat_id = se.seat_id)
+        Buffers: shared hit=2916
+        ->  Hash Join  (cost=3769.48..9529.91 rows=93309 width=4) (actual time=5.370..26.107 rows=109867.00 loops=1)
+              Hash Cond: (bs.show_id = s.show_id)
+              Buffers: shared hit=2912
+              ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=8) (actual time=0.003..6.576 rows=300389.00 loops=1)
+                    Buffers: shared hit=1968
+              ->  Hash  (cost=3148.09..3148.09 rows=49711 width=4) (actual time=5.334..5.334 rows=48990.00 loops=1)
+                    Buckets: 65536  Batches: 1  Memory Usage: 2235kB
+                    Buffers: shared hit=944
+                    ->  Bitmap Heap Scan on shows s  (cost=994.43..3148.09 rows=49711 width=4) (actual time=1.448..3.499 rows=48990.00 loops=1)
+                          Recheck Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                          Heap Blocks: exact=416
+                          Buffers: shared hit=944
+                          ->  Bitmap Index Scan on idx_shows_movie_id_starts_at  (cost=0.00..982.00 rows=49711 width=0) (actual time=1.422..1.422 rows=48990.00 loops=1)
+                                Index Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                                Index Searches: 86
+                                Buffers: shared hit=528
+        ->  Hash  (cost=263.73..263.73 rows=164 width=17) (actual time=0.017..0.018 rows=40.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 11kB
+              Buffers: shared hit=4
+              ->  Index Scan using uq_screen_seat_position on seats se  (cost=0.29..263.73 rows=164 width=17) (actual time=0.008..0.011 rows=40.00 loops=1)
+                    Index Cond: (screen_id = 101)
+                    Index Searches: 1
+                    Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=351
+Planning Time: 0.705 ms
+Execution Time: 28.792 ms
+=== R17 run 3 ===
+Sort  (cost=10096.18..10096.57 rows=156 width=17) (actual time=29.578..29.580 rows=28.00 loops=1)
+  Sort Key: se.row_label, se.seat_number
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=2922
+  ->  Hash Right Anti Join  (cost=4035.26..10090.50 rows=156 width=17) (actual time=29.543..29.547 rows=28.00 loops=1)
+        Hash Cond: (bs.seat_id = se.seat_id)
+        Buffers: shared hit=2916
+        ->  Hash Join  (cost=3769.48..9529.91 rows=93309 width=4) (actual time=5.146..26.885 rows=109867.00 loops=1)
+              Hash Cond: (bs.show_id = s.show_id)
+              Buffers: shared hit=2912
+              ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=8) (actual time=0.003..6.675 rows=300389.00 loops=1)
+                    Buffers: shared hit=1968
+              ->  Hash  (cost=3148.09..3148.09 rows=49711 width=4) (actual time=5.106..5.107 rows=48990.00 loops=1)
+                    Buckets: 65536  Batches: 1  Memory Usage: 2235kB
+                    Buffers: shared hit=944
+                    ->  Bitmap Heap Scan on shows s  (cost=994.43..3148.09 rows=49711 width=4) (actual time=1.428..3.421 rows=48990.00 loops=1)
+                          Recheck Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                          Heap Blocks: exact=416
+                          Buffers: shared hit=944
+                          ->  Bitmap Index Scan on idx_shows_movie_id_starts_at  (cost=0.00..982.00 rows=49711 width=0) (actual time=1.405..1.405 rows=48990.00 loops=1)
+                                Index Cond: ((starts_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (starts_at < '2026-07-01 00:00:00+05:30'::timestamp with time zone))
+                                Index Searches: 86
+                                Buffers: shared hit=528
+        ->  Hash  (cost=263.73..263.73 rows=164 width=17) (actual time=0.017..0.017 rows=40.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 11kB
+              Buffers: shared hit=4
+              ->  Index Scan using uq_screen_seat_position on seats se  (cost=0.29..263.73 rows=164 width=17) (actual time=0.007..0.010 rows=40.00 loops=1)
+                    Index Cond: (screen_id = 101)
+                    Index Searches: 1
+                    Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=351
+Planning Time: 0.677 ms
+Execution Time: 29.618 ms

@@ -1,0 +1,27 @@
+=== R09 run 1 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..31.89 rows=10 width=20) (actual time=0.020..0.032 rows=6.00 loops=1)
+  Index Cond: (((status)::text = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Index Searches: 1
+  Buffers: shared hit=6 read=3
+Planning:
+  Buffers: shared hit=210 read=3
+Planning Time: 0.540 ms
+Execution Time: 0.042 ms
+=== R09 run 2 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..31.89 rows=10 width=20) (actual time=0.010..0.019 rows=6.00 loops=1)
+  Index Cond: (((status)::text = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Index Searches: 1
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=213
+Planning Time: 0.359 ms
+Execution Time: 0.028 ms
+=== R09 run 3 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..31.89 rows=10 width=20) (actual time=0.013..0.023 rows=6.00 loops=1)
+  Index Cond: (((status)::text = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Index Searches: 1
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=213
+Planning Time: 0.386 ms
+Execution Time: 0.032 ms
