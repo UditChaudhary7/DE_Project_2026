@@ -142,39 +142,74 @@ Optimized R13 result: 7 rows (CORRECT — 7 offers were never redeemed)
 
 ## 7. Before/After Comparison — All 30 Queries
 
-| Query | Type | Before (ms) | After (ms) | Improvement (%) | Same Result? |
-|---|---|---:|---:|---:|:---:|
-| R01 | READ | 8.626 | 2.693 | 68.8% | ✅ |
-| R02 | READ | 5.969 | 0.574 | 90.4% | ✅ |
-| R03 | READ | 0.268 | 1.040 | -288.1% | ✅ |
-| R04 | READ | 0.054 | 0.131 | -142.6% | ✅ |
-| R05 | READ | 11.635 | 0.377 | 96.8% | ✅ |
-| R06 | READ | 0.261 | 0.373 | -42.9% | ✅ |
-| R07 | READ | 1.106 | 0.398 | 64.0% | ✅ |
-| R08 | READ | 24.346 | 21.737 | 10.7% | ✅ |
-| R09 | READ | 9.863 | 0.095 | 99.0% | ✅ |
-| R10 | READ | 486.657 | 22.529 | 95.4% | ✅ |
-| R11 | READ | 93.305 | 53.668 | 42.5% | ✅ |
-| R12 | READ | 154.993 | 79.174 | 48.9% | ✅ |
-| R13 | READ | 24.832 | 0.302 | 98.8% | ⚠️ Fixed (see §6) |
-| R14 | READ | 6.946 | 5.802 | 16.5% | ✅ |
-| R15 | READ | 58.456 | 103.337 | -76.8% | ✅ |
-| R16 | READ | 40.211 | 22.370 | 44.4% | ✅ |
-| R17 | READ | 62.345 | 36.231 | 41.9% | ✅ |
-| R18 | READ | 127.188 | 62.488 | 50.9% | ✅ |
-| R19 | READ | 2366.689 | 0.876 | 100.0% (2,702×) | ✅ |
-| R20 | READ | 29.863 | 15.706 | 47.4% | ✅ |
-| R21 | READ | 94.482 | 51.424 | 45.6% | ✅ |
-| R22 | READ | 70.015 | 7.083 | 89.9% | ✅ |
-| R23 | READ | 0.034 | 0.028 | 17.6% | ✅ |
-| R24 | READ | 102.348 | 65.175 | 36.3% | ✅ |
-| R25 | READ | 40.569 | 28.102 | 30.7% | ✅ |
-| W01 | WRITE | 1.288 | 0.822 | 36.2% | ✅ |
-| W02 | WRITE | 19.147 | 10.908 | 43.0% | ✅ |
-| W03 | WRITE | 0.858 | 0.331 | 61.4% | ✅ |
-| W04 | WRITE | 13.687 | 20.496 | -49.7% | ✅ |
-| W05 | WRITE | 9.432 | 3.549 | 62.4% | ✅ |
-| **Total** | | **3,790.5** | **617.5** | **83.7%** | |
+### 7.1 Timing Comparison
+
+| Query | Type | Before (ms) | After (ms) | Improvement (%) | Speedup | Same Result? |
+|---|---|---:|---:|---:|---:|:---:|
+| R01 | READ | 8.626 | 2.693 | 68.8% | 6.6× | ✅ |
+| R02 | READ | 5.969 | 0.574 | 90.4% | 8.5× | ✅ |
+| R03 | READ | 0.268 | 1.040 | -288.1% | 0.2× | ✅ |
+| R04 | READ | 0.054 | 0.131 | -142.6% | 0.2× | ✅ |
+| R05 | READ | 11.635 | 0.377 | 96.8% | 35.8× | ✅ |
+| R06 | READ | 0.261 | 0.373 | -42.9% | 0.3× | ✅ |
+| R07 | READ | 1.106 | 0.398 | 64.0% | 4.0× | ✅ |
+| R08 | READ | 24.346 | 21.737 | 10.7% | 1.3× | ✅ |
+| R09 | READ | 9.863 | 0.095 | 99.0% | 239× | ✅ |
+| R10 | READ | 486.657 | 22.529 | 95.4% | 28.7× | ✅ |
+| R11 | READ | 93.305 | 53.668 | 42.5% | 1.8× | ✅ |
+| R12 | READ | 154.993 | 79.174 | 48.9% | 2.1× | ✅ |
+| R13 | READ | 24.832 | 0.302 | 98.8% | 204× | ⚠️ Fixed (see §6) |
+| R14 | READ | 6.946 | 5.802 | 16.5% | 1.4× | ✅ |
+| R15 | READ | 58.456 | 103.337 | -76.8% | 0.6× | ✅ |
+| R16 | READ | 40.211 | 22.370 | 44.4% | 1.5× | ✅ |
+| R17 | READ | 62.345 | 36.231 | 41.9% | 1.5× | ✅ |
+| R18 | READ | 127.188 | 62.488 | 50.9% | 2.5× | ✅ |
+| R19 | READ | 2366.689 | 0.876 | 100.0% | 3,747× | ✅ |
+| R20 | READ | 29.863 | 15.706 | 47.4% | 1.9× | ✅ |
+| R21 | READ | 94.482 | 51.424 | 45.6% | 1.9× | ✅ |
+| R22 | READ | 70.015 | 7.083 | 89.9% | 12.0× | ✅ |
+| R23 | READ | 0.034 | 0.028 | 17.6% | 1.0× | ✅ |
+| R24 | READ | 102.348 | 65.175 | 36.3% | 1.6× | ✅ |
+| R25 | READ | 40.569 | 28.102 | 30.7% | 1.5× | ✅ |
+| W01 | WRITE | 1.288 | 0.822 | 36.2% | 1.2× | ✅ |
+| W02 | WRITE | 19.147 | 10.908 | 43.0% | 2.3× | ✅ |
+| W03 | WRITE | 0.858 | 0.331 | 61.4% | 3.8× | ✅ |
+| W04 | WRITE | 13.687 | 20.496 | -49.7% | 0.7× | ✅ |
+| W05 | WRITE | 9.432 | 3.549 | 62.4% | 7.4× | ✅ |
+| **Total** | | **3,790.5** | **617.5** | **83.7%** | | |
+
+### 7.2 Shared Buffer Hits — Before vs After (last run)
+
+Buffer hits measure how many 8 KB pages PostgreSQL read from shared memory. Fewer hits means less data touched.
+
+| Query | Baseline Buffers | Optimized Buffers | Change | Why |
+|---|---:|---:|---|---|
+| R01 | 9,230 | 314 | **−97%** | Index scan on `idx_shows_screen_id_starts_at` replaces GiST exclusion scan |
+| R02 | 9,229 | 58 | **−99%** | Bitmap index scan on `idx_shows_movie_id_starts_at` reads only matching shows |
+| R05 | 2,236 | 54 | **−98%** | `idx_bookings_customer_id` finds 7 rows instead of scanning 150K |
+| R09 | 2,195 | 9 | **−100%** | `idx_bookings_status_booked_at` jumps directly to PENDING rows |
+| R13 | 2,193 | 52 | **−98%** | Partial index `idx_bookings_offer_code` skips 95% of bookings |
+| R19 | 455,158 | 990 | **−100%** | LEFT JOIN + index replaces 207 × full seq scan of bookings |
+| R22 | 2,195 | 865 | **−61%** | Covering index avoids heap fetches for 100K skipped rows |
+| W05 | 2,268 | 1,194 | **−47%** | `idx_shows_movie_id_starts_at` targets only movie 2 July shows |
+| R10 | 2,834 | 148,610 | +5,144% | More buffers but 28× faster — index enables tight range scan per screen, trading I/O pattern for far fewer actual comparisons |
+| R15 | 2,195 | 2,195 | 0% | Full-table aggregation — every row must be read regardless |
+
+### 7.3 Scan Type Changes
+
+| Query | Baseline Scan | Optimized Scan |
+|---|---|---|
+| R01 | Seq Scan on screens, venues; GiST Index Scan on shows | Seq Scan on screens, venues; **Index Scan** on `idx_shows_screen_id_starts_at` |
+| R02 | Seq Scan on screens, venues; GiST Index Scan | **Bitmap Index Scan** on `idx_shows_movie_id_starts_at`; PK Index Scan on venues |
+| R05 | **Seq Scan on bookings** (150K rows) | **Bitmap Index Scan** on `idx_bookings_customer_id` (7 rows) |
+| R07 | Seq Scan on screens; GiST Bitmap on shows | **Index Scan** on `idx_screens_venue_id`; Bitmap on `idx_shows_screen_id_starts_at` |
+| R09 | **Parallel Seq Scan on bookings** | **Index Scan** on `idx_bookings_status_booked_at` |
+| R10 | **Parallel Seq Scan** on shows (both sides) | Seq Scan on s1; **Index Scan** on `idx_shows_screen_id_starts_at` for s2 |
+| R13 | Seq Scan on bookings (150K) | **Index Only Scan** on `idx_bookings_offer_code` (0 heap fetches) |
+| R19 | Seq Scan on bookings (207 times × 150K) | **Index Scan** on `idx_bookings_show_id` (207 × ~2 rows) |
+| R22 | Seq Scan + Sort + temp disk writes | **Index Only Scan** on `idx_bookings_booked_at_desc` (83 heap fetches) |
+| W03 | Seq Scan for `min(booking_id)` subquery | **Index Scan** on `idx_bookings_status_booked_at` |
+| W05 | Seq Scan on shows | **Bitmap Index Scan** on `idx_shows_movie_id_starts_at` |
 
 ---
 
