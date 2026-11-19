@@ -1,0 +1,80 @@
+=== W03 run 1 ===
+Update on bookings  (cost=19.24..27.25 rows=0 width=0) (actual time=0.204..0.205 rows=0 loops=1)
+  Buffers: shared hit=79 dirtied=7
+  InitPlan 1 (returns $1)
+    ->  Aggregate  (cost=18.81..18.82 rows=1 width=4) (actual time=0.031..0.032 rows=1 loops=1)
+          Buffers: shared hit=13
+          ->  Index Scan using idx_bookings_status_booked_at on bookings bookings_1  (cost=0.42..18.79 rows=5 width=4) (actual time=0.014..0.029 rows=10 loops=1)
+                Index Cond: (status = 'PENDING'::text)
+                Buffers: shared hit=13
+  ->  Index Scan using bookings_booking_id_show_id_key on bookings  (cost=0.42..8.44 rows=1 width=38) (actual time=0.041..0.041 rows=1 loops=1)
+        Index Cond: (booking_id = $1)
+        Buffers: shared hit=17
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.364 ms
+Execution Time: 0.604 ms
+=== W03 run 2 ===
+Update on bookings  (cost=19.24..27.25 rows=0 width=0) (actual time=0.189..0.189 rows=0 loops=1)
+  Buffers: shared hit=83
+  InitPlan 1 (returns $1)
+    ->  Aggregate  (cost=18.81..18.82 rows=1 width=4) (actual time=0.039..0.040 rows=1 loops=1)
+          Buffers: shared hit=13
+          ->  Index Scan using idx_bookings_status_booked_at on bookings bookings_1  (cost=0.42..18.79 rows=5 width=4) (actual time=0.014..0.037 rows=10 loops=1)
+                Index Cond: (status = 'PENDING'::text)
+                Buffers: shared hit=13
+  ->  Index Scan using bookings_booking_id_show_id_key on bookings  (cost=0.42..8.44 rows=1 width=38) (actual time=0.048..0.049 rows=1 loops=1)
+        Index Cond: (booking_id = $1)
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.361 ms
+Execution Time: 0.238 ms
+=== W03 run 3 ===
+Update on bookings  (cost=19.24..27.25 rows=0 width=0) (actual time=0.223..0.224 rows=0 loops=1)
+  Buffers: shared hit=87
+  InitPlan 1 (returns $1)
+    ->  Aggregate  (cost=18.81..18.82 rows=1 width=4) (actual time=0.041..0.041 rows=1 loops=1)
+          Buffers: shared hit=13
+          ->  Index Scan using idx_bookings_status_booked_at on bookings bookings_1  (cost=0.42..18.79 rows=5 width=4) (actual time=0.014..0.038 rows=10 loops=1)
+                Index Cond: (status = 'PENDING'::text)
+                Buffers: shared hit=13
+  ->  Index Scan using bookings_booking_id_show_id_key on bookings  (cost=0.42..8.44 rows=1 width=38) (actual time=0.050..0.052 rows=1 loops=1)
+        Index Cond: (booking_id = $1)
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.391 ms
+Execution Time: 0.276 ms
+=== W03 run 4 ===
+Update on bookings  (cost=19.24..27.25 rows=0 width=0) (actual time=0.222..0.222 rows=0 loops=1)
+  Buffers: shared hit=88
+  InitPlan 1 (returns $1)
+    ->  Aggregate  (cost=18.81..18.82 rows=1 width=4) (actual time=0.039..0.039 rows=1 loops=1)
+          Buffers: shared hit=13
+          ->  Index Scan using idx_bookings_status_booked_at on bookings bookings_1  (cost=0.42..18.79 rows=5 width=4) (actual time=0.015..0.036 rows=10 loops=1)
+                Index Cond: (status = 'PENDING'::text)
+                Buffers: shared hit=13
+  ->  Index Scan using bookings_booking_id_show_id_key on bookings  (cost=0.42..8.44 rows=1 width=38) (actual time=0.048..0.050 rows=1 loops=1)
+        Index Cond: (booking_id = $1)
+        Buffers: shared hit=19
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.412 ms
+Execution Time: 0.277 ms
+=== W03 run 5 ===
+Update on bookings  (cost=19.24..27.25 rows=0 width=0) (actual time=0.210..0.211 rows=0 loops=1)
+  Buffers: shared hit=88
+  InitPlan 1 (returns $1)
+    ->  Aggregate  (cost=18.81..18.82 rows=1 width=4) (actual time=0.034..0.034 rows=1 loops=1)
+          Buffers: shared hit=13
+          ->  Index Scan using idx_bookings_status_booked_at on bookings bookings_1  (cost=0.42..18.79 rows=5 width=4) (actual time=0.014..0.032 rows=10 loops=1)
+                Index Cond: (status = 'PENDING'::text)
+                Buffers: shared hit=13
+  ->  Index Scan using bookings_booking_id_show_id_key on bookings  (cost=0.42..8.44 rows=1 width=38) (actual time=0.043..0.045 rows=1 loops=1)
+        Index Cond: (booking_id = $1)
+        Buffers: shared hit=19
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.366 ms
+Execution Time: 0.262 ms

@@ -1,0 +1,90 @@
+=== W04 run 1 ===
+Delete on booking_seats bs  (cost=18.87..5779.30 rows=0 width=0) (actual time=24.859..24.861 rows=0 loops=1)
+  Buffers: shared hit=1989
+  ->  Hash Join  (cost=18.87..5779.30 rows=10 width=12) (actual time=9.034..24.822 rows=12 loops=1)
+        Hash Cond: (bs.booking_id = b.booking_id)
+        Buffers: shared hit=1977
+        ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=10) (actual time=0.008..15.450 rows=300389 loops=1)
+              Buffers: shared hit=1968
+        ->  Hash  (cost=18.81..18.81 rows=5 width=10) (actual time=0.047..0.047 rows=6 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=9
+              ->  Index Scan using idx_bookings_status_booked_at on bookings b  (cost=0.42..18.81 rows=5 width=10) (actual time=0.025..0.041 rows=6 loops=1)
+                    Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+                    Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=373
+Planning Time: 1.384 ms
+Execution Time: 24.996 ms
+=== W04 run 2 ===
+Delete on booking_seats bs  (cost=18.87..5779.30 rows=0 width=0) (actual time=20.488..20.489 rows=0 loops=1)
+  Buffers: shared hit=1989
+  ->  Hash Join  (cost=18.87..5779.30 rows=10 width=12) (actual time=4.474..20.467 rows=12 loops=1)
+        Hash Cond: (bs.booking_id = b.booking_id)
+        Buffers: shared hit=1977
+        ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=10) (actual time=0.003..12.684 rows=300389 loops=1)
+              Buffers: shared hit=1968
+        ->  Hash  (cost=18.81..18.81 rows=5 width=10) (actual time=0.040..0.041 rows=6 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=9
+              ->  Index Scan using idx_bookings_status_booked_at on bookings b  (cost=0.42..18.81 rows=5 width=10) (actual time=0.014..0.031 rows=6 loops=1)
+                    Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+                    Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=372
+Planning Time: 0.602 ms
+Execution Time: 20.536 ms
+=== W04 run 3 ===
+Delete on booking_seats bs  (cost=18.87..5779.30 rows=0 width=0) (actual time=19.610..19.611 rows=0 loops=1)
+  Buffers: shared hit=1989
+  ->  Hash Join  (cost=18.87..5779.30 rows=10 width=12) (actual time=4.857..19.593 rows=12 loops=1)
+        Hash Cond: (bs.booking_id = b.booking_id)
+        Buffers: shared hit=1977
+        ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=10) (actual time=0.003..12.099 rows=300389 loops=1)
+              Buffers: shared hit=1968
+        ->  Hash  (cost=18.81..18.81 rows=5 width=10) (actual time=0.023..0.024 rows=6 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=9
+              ->  Index Scan using idx_bookings_status_booked_at on bookings b  (cost=0.42..18.81 rows=5 width=10) (actual time=0.012..0.020 rows=6 loops=1)
+                    Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+                    Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=372
+Planning Time: 0.520 ms
+Execution Time: 19.653 ms
+=== W04 run 4 ===
+Delete on booking_seats bs  (cost=18.87..5779.30 rows=0 width=0) (actual time=18.675..18.675 rows=0 loops=1)
+  Buffers: shared hit=1989
+  ->  Hash Join  (cost=18.87..5779.30 rows=10 width=12) (actual time=4.309..18.660 rows=12 loops=1)
+        Hash Cond: (bs.booking_id = b.booking_id)
+        Buffers: shared hit=1977
+        ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=10) (actual time=0.003..11.525 rows=300389 loops=1)
+              Buffers: shared hit=1968
+        ->  Hash  (cost=18.81..18.81 rows=5 width=10) (actual time=0.025..0.025 rows=6 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=9
+              ->  Index Scan using idx_bookings_status_booked_at on bookings b  (cost=0.42..18.81 rows=5 width=10) (actual time=0.012..0.022 rows=6 loops=1)
+                    Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+                    Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=372
+Planning Time: 0.518 ms
+Execution Time: 18.718 ms
+=== W04 run 5 ===
+Delete on booking_seats bs  (cost=18.87..5779.30 rows=0 width=0) (actual time=18.536..18.537 rows=0 loops=1)
+  Buffers: shared hit=1989
+  ->  Hash Join  (cost=18.87..5779.30 rows=10 width=12) (actual time=4.067..18.523 rows=12 loops=1)
+        Hash Cond: (bs.booking_id = b.booking_id)
+        Buffers: shared hit=1977
+        ->  Seq Scan on booking_seats bs  (cost=0.00..4971.89 rows=300389 width=10) (actual time=0.003..11.486 rows=300389 loops=1)
+              Buffers: shared hit=1968
+        ->  Hash  (cost=18.81..18.81 rows=5 width=10) (actual time=0.022..0.022 rows=6 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=9
+              ->  Index Scan using idx_bookings_status_booked_at on bookings b  (cost=0.42..18.81 rows=5 width=10) (actual time=0.011..0.019 rows=6 loops=1)
+                    Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+                    Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=372
+Planning Time: 0.504 ms
+Execution Time: 18.575 ms

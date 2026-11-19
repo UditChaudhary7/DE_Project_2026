@@ -1,0 +1,40 @@
+=== R09 run 1 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..18.81 rows=5 width=20) (actual time=0.321..0.329 rows=6 loops=1)
+  Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Buffers: shared hit=6 read=3
+Planning:
+  Buffers: shared hit=220 read=3
+Planning Time: 0.722 ms
+Execution Time: 0.338 ms
+=== R09 run 2 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..18.81 rows=5 width=20) (actual time=0.015..0.023 rows=6 loops=1)
+  Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=223
+Planning Time: 0.359 ms
+Execution Time: 0.031 ms
+=== R09 run 3 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..18.81 rows=5 width=20) (actual time=0.014..0.022 rows=6 loops=1)
+  Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=223
+Planning Time: 0.371 ms
+Execution Time: 0.031 ms
+=== R09 run 4 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..18.81 rows=5 width=20) (actual time=0.017..0.025 rows=6 loops=1)
+  Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=223
+Planning Time: 0.366 ms
+Execution Time: 0.034 ms
+=== R09 run 5 ===
+Index Scan using idx_bookings_status_booked_at on bookings  (cost=0.42..18.81 rows=5 width=20) (actual time=0.020..0.030 rows=6 loops=1)
+  Index Cond: ((status = 'PENDING'::text) AND (booked_at < ('2026-06-30 23:59:00+05:30'::timestamp with time zone - '00:10:00'::interval)))
+  Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=223
+Planning Time: 0.549 ms
+Execution Time: 0.039 ms

@@ -1,0 +1,50 @@
+=== R22 run 1 ===
+Limit  (cost=4813.01..4814.21 rows=25 width=41) (actual time=9.496..9.498 rows=25 loops=1)
+  Buffers: shared hit=46 read=819
+  ->  Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..7223.83 rows=150094 width=41) (actual time=0.025..7.806 rows=100025 loops=1)
+        Heap Fetches: 83
+        Buffers: shared hit=46 read=819
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.336 ms
+Execution Time: 9.509 ms
+=== R22 run 2 ===
+Limit  (cost=4813.01..4814.21 rows=25 width=41) (actual time=6.414..6.416 rows=25 loops=1)
+  Buffers: shared hit=865
+  ->  Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..7223.83 rows=150094 width=41) (actual time=0.024..4.609 rows=100025 loops=1)
+        Heap Fetches: 83
+        Buffers: shared hit=865
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.322 ms
+Execution Time: 6.425 ms
+=== R22 run 3 ===
+Limit  (cost=4813.01..4814.21 rows=25 width=41) (actual time=6.676..6.678 rows=25 loops=1)
+  Buffers: shared hit=865
+  ->  Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..7223.83 rows=150094 width=41) (actual time=0.025..4.859 rows=100025 loops=1)
+        Heap Fetches: 83
+        Buffers: shared hit=865
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.333 ms
+Execution Time: 6.688 ms
+=== R22 run 4 ===
+Limit  (cost=4813.01..4814.21 rows=25 width=41) (actual time=6.427..6.429 rows=25 loops=1)
+  Buffers: shared hit=865
+  ->  Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..7223.83 rows=150094 width=41) (actual time=0.025..4.675 rows=100025 loops=1)
+        Heap Fetches: 83
+        Buffers: shared hit=865
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.321 ms
+Execution Time: 6.439 ms
+=== R22 run 5 ===
+Limit  (cost=4813.01..4814.21 rows=25 width=41) (actual time=6.341..6.343 rows=25 loops=1)
+  Buffers: shared hit=865
+  ->  Index Only Scan using idx_bookings_booked_at_desc on bookings  (cost=0.42..7223.83 rows=150094 width=41) (actual time=0.024..4.595 rows=100025 loops=1)
+        Heap Fetches: 83
+        Buffers: shared hit=865
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.339 ms
+Execution Time: 6.353 ms

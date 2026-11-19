@@ -1,0 +1,40 @@
+=== R23 run 1 ===
+Index Scan using customers_phone_key on customers  (cost=0.29..8.31 rows=1 width=20) (actual time=0.018..0.018 rows=1 loops=1)
+  Index Cond: (phone = '7700001331'::text)
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=103
+Planning Time: 0.269 ms
+Execution Time: 0.033 ms
+=== R23 run 2 ===
+Index Scan using customers_phone_key on customers  (cost=0.29..8.31 rows=1 width=20) (actual time=0.012..0.012 rows=1 loops=1)
+  Index Cond: (phone = '7700001331'::text)
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=103
+Planning Time: 0.202 ms
+Execution Time: 0.026 ms
+=== R23 run 3 ===
+Index Scan using customers_phone_key on customers  (cost=0.29..8.31 rows=1 width=20) (actual time=0.012..0.013 rows=1 loops=1)
+  Index Cond: (phone = '7700001331'::text)
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=103
+Planning Time: 0.201 ms
+Execution Time: 0.028 ms
+=== R23 run 4 ===
+Index Scan using customers_phone_key on customers  (cost=0.29..8.31 rows=1 width=20) (actual time=0.012..0.012 rows=1 loops=1)
+  Index Cond: (phone = '7700001331'::text)
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=103
+Planning Time: 0.194 ms
+Execution Time: 0.027 ms
+=== R23 run 5 ===
+Index Scan using customers_phone_key on customers  (cost=0.29..8.31 rows=1 width=20) (actual time=0.012..0.013 rows=1 loops=1)
+  Index Cond: (phone = '7700001331'::text)
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=103
+Planning Time: 0.205 ms
+Execution Time: 0.027 ms
