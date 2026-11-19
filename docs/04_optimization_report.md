@@ -1,184 +1,298 @@
-# Performance Analysis & Optimization Report (CP3)
+# Comprehensive Optimization Report (CP3)
 
 **Course:** Database Management Systems · B.Tech 2nd Year  
 **Project:** BookMyShow Database Engineering (DE Project 2026)  
-**Milestone:** Checkpoint 3 (CP3 — Query & Index Optimization)  
-**Database Engine:** PostgreSQL 18.4 (macOS Sequoia, Apple Silicon ARM64, 16 GB Unified Memory)  
+**Milestone:** Checkpoint 3 (CP3 — Query and Index Optimization)  
+**Database Engine:** PostgreSQL 18.4 (macOS Sequoia, Apple Silicon ARM64, 16 GB Unified RAM)  
 **Workload File:** `sql/06_optimized_queries.sql` (30 Queries: R01–R25 Read, W01–W05 Write)  
-**Index Definition File:** `sql/05_indexes.sql` (12 Targeted Performance Indexes)  
+**Index Script:** `sql/05_indexes.sql` (12 Targeted Performance Indexes)  
+**Benchmark Script:** `benchmarks/run_benchmark.sh` (3 repeated runs, isolated connection, `EXPLAIN (ANALYZE, BUFFERS)`)  
 **Active Git Branch:** `cp3-optimization`
 
 ---
 
-## 1. Executive Summary & Workload Metrics
+## 1. Introduction & Objectives
 
-To evaluate query optimization performance, the complete BookMyShow workload of 30 production queries was benchmarked against the 778,048-row dataset loaded in the `bms` schema. Execution times, memory/buffer cache statistics (`shared hit`, `shared read`), and scan node behaviors were recorded using PostgreSQL's native `EXPLAIN (ANALYZE, BUFFERS)` engine harness (`benchmarks/run_benchmark.sh`).
+Checkpoint 3 (CP3) represents the core query and database optimization phase of the BookMyShow Database Engineering project. The primary objective is to transform an initial baseline implementation—characterized by full table sequential scans, unindexed foreign key lookups, non-sargable predicates, and quadratic nested subqueries—into a high-performance, enterprise-grade relational database workload.
 
-### Overall Workload Improvement
-- **Total Workload Execution Time (Baseline):** **3,805.42 ms**
-- **Total Workload Execution Time (Optimized):** **444.83 ms**
-- **Cumulative Latency Reduction:** **-3,360.59 ms (-88.31%)**
-- **Overall System Throughput Gain:** **8.55x aggregate speedup**
-- **Peak Single-Query Acceleration:** **3,504x speedup** (Query R19: from 2,366.69 ms down to 0.68 ms)
-- **Zero-Regression Guarantee:** 29 out of 30 queries saw positive speedups or maintained sub-millisecond execution times.
+### Optimization Principles Followed:
+1. **Surgical Indexing:** Create indexes strictly backed by empirical execution plan analysis (`EXPLAIN (ANALYZE, BUFFERS)`). Avoid creating redundant, unused, or duplicate indexes.
+2. **Sargability & Relational Algebra Rewrites:** Transform non-sargable SQL expressions into range scans that can traverse B-tree indexes directly.
+3. **Subquery Flattening:** Eliminate correlated scalar subqueries executed repeatedly across table rows.
+4. **Three-Valued Logic Correction:** Fix relational correctness bugs resulting from SQL `NULL` values in subqueries.
+5. **Write Safety:** Benchmark write transactions (`INSERT`, `UPDATE`, `DELETE`) within isolated `BEGIN ... ROLLBACK` blocks, preserving seed data integrity.
 
 ---
 
-## 2. Query-by-Query Performance Comparison (All 30 Queries)
+## 2. Baseline Performance Overview (CP2 Summary)
 
-All timings represent the mathematical average of 3 consecutive runs under isolated client connection conditions (`work_mem = 4MB`, `shared_buffers = 128MB`). Write queries (W01–W05) were strictly executed within explicit `BEGIN ... ROLLBACK` transaction envelopes to ensure zero persistent data corruption or data state skew.
+In CP2, the database was populated with 778,048 records across 11 normalized tables in schema `bms`. At baseline, only Primary Keys, unique constraints, and a GiST exclusion constraint existed.
 
-| Query ID | Type | Description | Baseline Avg (ms) | Optimized Avg (ms) | Absolute Gain (ms) | Speedup Factor | % Improvement |
+- **Baseline Total Workload Runtime:** **3,805.42 ms** across all 30 queries.
+- **Top 3 Longest Running Queries:**
+  - `R19` (Distributor Report): **2,366.69 ms** (62.2% of total workload time).
+  - `R10` (Cinema Operations): **486.66 ms** (12.8% of total workload time).
+  - `R12` (Repeat Movie Bookings): **154.99 ms**.
+- **Buffer Cache Churn:** Query R19 alone traversed **455,158 buffer pages** (over 3.7 GB of memory bandwidth) to compute ticket counts for a single movie's shows.
+
+---
+
+## 3. Identified Architectural Bottlenecks
+
+Baseline query plans revealed five major structural bottlenecks:
+
+1. **Unindexed Foreign Keys on Large Tables:**
+   - PostgreSQL does *not* automatically index foreign key columns. The 150,094-row `bookings` table had no indexes on `customer_id` or `show_id`. Queries filtering by customer (R05) or joining bookings to shows (R08, R12, R16, R18, R19) were forced to perform full sequential scans of all 150,000 rows.
+2. **Correlated Scalar Subquery Churn (R19):**
+   - The query used a scalar subquery `(SELECT count(*) FROM bookings b JOIN booking_seats bs ... WHERE b.show_id = s.show_id)` inside the `SELECT` projection list. Because `shows` returned 207 rows, PostgreSQL executed 207 separate sequential scans of `bookings`, examining 31,069,458 rows in total.
+3. **Non-Sargable Date and Timestamp Functions (R01, R07, R18, R20):**
+   - Expressions such as `DATE(s.starts_at) = '2026-07-02'` or `s.starts_at::date = '2026-06-28'` prevented the planner from utilizing B-tree index range scans, forcing sequential scans across 160,034 show records.
+4. **Quadratic Self-Joins (R10):**
+   - Finding consecutive shows on the same screen with less than 30 minutes cleaning time evaluated `(s2.starts_at - s1.ends_at) < interval '30 minutes'` across all show pairings on the same screen without upper bound bounding, yielding a nested loop over hundreds of thousands of candidate combinations.
+5. **Deep-Offset Pagination and External Sorting (R22):**
+   - `SELECT ... FROM bookings ORDER BY booked_at DESC LIMIT 25 OFFSET 100000` scanned all 150,094 heap tuples and performed a high-latency top-N heap sort in memory.
+
+---
+
+## 4. Indexing Strategy (`sql/05_indexes.sql`)
+
+Twelve targeted indexes were engineered to resolve the bottlenecks above. Every index serves a specific operational purpose:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   TARGETED INDEX ARCHITECTURE (12 INDEXES)              │
+├──────────────────┬─────────────────────────────┬───────────────────────┤
+│ Table            │ Index Name                  │ Type & Purpose        │
+├──────────────────┼─────────────────────────────┼───────────────────────┤
+│ bookings         │ idx_bookings_customer_id    │ B-tree FK (R05)       │
+│ bookings         │ idx_bookings_show_id        │ B-tree FK (R08,R18,R19)│
+│ bookings         │ idx_bookings_status_booked  │ Composite (R09,R20,W04│
+│ bookings         │ idx_bookings_offer_code     │ Partial (R13)         │
+│ bookings         │ idx_bookings_booked_at_desc │ Covering INCLUDE(R22) │
+│ shows            │ idx_shows_movie_starts_at   │ Composite (R01,R02,R19│
+│ shows            │ idx_shows_screen_starts_at  │ Composite (R07,R10,R25│
+│ booking_seats    │ idx_booking_seats_seat_id   │ B-tree FK (R11,R17,R24│
+│ seats            │ idx_seats_screen_class      │ Composite (R11,R24)   │
+│ screens          │ idx_screens_venue_id        │ B-tree FK (R01,R02,R07│
+│ venues           │ idx_venues_city_id          │ B-tree FK (R01,R02,R18│
+│ movie_reviews    │ idx_movie_reviews_movie_rat │ Composite (R14)       │
+└──────────────────┴─────────────────────────────┴───────────────────────┘
+```
+
+### Detailed Index Justification:
+- **Composite Indexes (`status, booked_at` and `movie_id, starts_at`):** Follow the *Equality First, Range Second* rule. The leading column filters the low-cardinality equality predicate, allowing the trailing column to execute an immediate range scan without sorting.
+- **Partial Index (`idx_bookings_offer_code WHERE offer_code IS NOT NULL`):** Because ~95% of bookings do not use a promotional offer, indexing `NULL` values wastes disk and cache space. Indexing only non-null offer codes reduced index size to just **176 kB** while accelerating anti-join lookups by 232x.
+- **Covering Index (`idx_bookings_booked_at_desc` with `INCLUDE`):** Stores `booking_id, customer_id, total_amount, status` directly in the index leaf pages. For high-offset pagination (R22), PostgreSQL fulfills the query entirely through an **Index Only Scan**, bypassing 100,000 random heap tuple reads.
+- **Why GIN / BRIN were not chosen:**
+  - `BRIN` requires physical sorting on disk and works best on multi-gigabyte append-only tables; on a 150K-row table, B-tree range seek is significantly faster (0.03 ms vs ~2 ms).
+  - `GIN` is ideal for full-text search or arrays; movie title search (R06) operates on only 300 rows where table sequential scan takes 0.13 ms, making GIN maintenance overhead unjustified.
+
+---
+
+## 5. Query Optimization Techniques (`sql/06_optimized_queries.sql`)
+
+### 1. Eliminating Correlated Subquery with `LEFT JOIN + GROUP BY` (R19)
+- **Baseline:** Evaluated `SELECT (SELECT count(*) FROM ...) FROM shows s WHERE ...`
+- **Optimized:**
+  ```sql
+  SELECT s.show_id, s.starts_at, sc.screen_name,
+         count(bs.seat_id) AS tickets_sold
+  FROM shows s
+  JOIN screens sc ON sc.screen_id = s.screen_id
+  LEFT JOIN bookings b ON b.show_id = s.show_id AND b.status IN ('CONFIRMED', 'PENDING')
+  LEFT JOIN booking_seats bs ON bs.booking_id = b.booking_id
+  WHERE s.movie_id = 2
+    AND s.starts_at >= '2026-06-01' AND s.starts_at < '2026-07-01'
+  GROUP BY s.show_id, s.starts_at, sc.screen_name
+  ORDER BY s.starts_at;
+  ```
+- **Result:** Plan changed from a Nested Loop of 207 sequential scans into a single Hash Aggregate join, cutting runtime from **2,366.69 ms to 0.68 ms (3,506x speedup)**.
+
+### 2. Sargable Range Predicates (R01, R07, R18, R20)
+- Replaced `DATE(s.starts_at) = '2026-07-02'` with `s.starts_at >= '2026-07-02' AND s.starts_at < '2026-07-03'`.
+- This enables PostgreSQL to compute index start/stop keys directly at the B-tree root, avoiding function evaluation per row.
+
+### 3. Sargable Self-Join Window Bounding (R10)
+- Baseline condition: `(s2.starts_at - s1.ends_at) < interval '30 minutes' AND s2.starts_at >= s1.ends_at`.
+- Optimized condition:
+  ```sql
+  WHERE s2.starts_at >= s1.ends_at
+    AND s2.starts_at < s1.ends_at + interval '30 minutes'
+  ```
+- Adding the upper bound transformed the join from an unindexed quadratic scan into an indexed range lookup on `idx_shows_screen_id_starts_at`, dropping latency from **486.66 ms to 34.68 ms (14x speedup)**.
+
+---
+
+## 6. SQL NULL-Related Correctness Issue & Resolution (R13)
+
+### The Problem: Three-Valued Logic Trap in `NOT IN`
+The baseline query R13 was defined as:
+```sql
+SELECT offer_code, description, discount_pct
+FROM offers
+WHERE offer_code NOT IN (SELECT offer_code FROM bookings);
+```
+In SQL's three-valued logic (`TRUE`, `FALSE`, `UNKNOWN`), the expression `val NOT IN (val1, val2, NULL)` evaluates as:
+$$\text{NOT } (val = val1 \lor val = val2 \lor val = \text{NULL})$$
+If any row in `bookings` contains `offer_code IS NULL` (which represents ~95% of bookings where customers did not use an offer), the inner comparison evaluates to `UNKNOWN`. Negating `UNKNOWN` yields `UNKNOWN`. Because `WHERE` clauses require conditions to evaluate strictly to `TRUE`, **the baseline query returned exactly 0 rows**, failing silently!
+
+### The Solution: `NOT EXISTS` Anti-Join
+In `sql/06_optimized_queries.sql`, R13 was rewritten using `NOT EXISTS`:
+```sql
+SELECT o.offer_code, o.description, o.discount_pct
+FROM offers o
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM bookings b
+    WHERE b.offer_code = o.offer_code
+);
+```
+
+### Verification & Impact:
+- **Correctness:** Correctly returns the **7 offers** in the seed dataset that have never been redeemed (`AXIS100`, `BLOCKBUSTER`, `FEDERAL50`, `HSBC20`, `INDUS50`, `KOTAK20`, `YES100`).
+- **Performance:** Paired with the partial index `idx_bookings_offer_code`, execution time dropped from **24.83 ms down to 0.11 ms (232x speedup)** via an **Index Only Scan**.
+
+---
+
+## 7. Before / After Comparison for All 30 Queries
+
+All measurements were taken on PostgreSQL 18.4 with 3 runs averaged (`summary.csv`).
+
+| Query ID | Type | Description | Baseline Avg (ms) | Optimized Avg (ms) | Latency Delta | Speedup | % Improvement |
 |:---|:---:|:---|---:|---:|---:|---:|---:|
-| **R01** | READ | Movies showing in Bengaluru on 2 July 2026 | 8.626 | 0.722 | -7.904 | **11.95x** | +91.63% |
-| **R02** | READ | Movie 2 showtimes in Bengaluru grouped by cinema | 5.969 | 0.212 | -5.757 | **28.16x** | +96.45% |
-| **R03** | READ | Seat layout of show 144446 and sold status | 0.268 | 0.300 | +0.032 | 0.89x | -11.94% |
-| **R04** | READ | Support: lookup booking by booking code | 0.054 | 0.035 | -0.019 | **1.54x** | +35.19% |
-| **R05** | READ | Customer 1331 upcoming confirmed bookings | 11.635 | 0.141 | -11.494 | **82.52x** | +98.79% |
-| **R06** | READ | Movie title search containing 'kalki' | 0.261 | 0.138 | -0.123 | **1.89x** | +47.13% |
-| **R07** | READ | Venue 11 occupancy dashboard on 28 June 2026 | 1.106 | 0.102 | -1.004 | **10.84x** | +90.78% |
-| **R08** | READ | Top 10 movies by collections over weekend | 24.346 | 17.106 | -7.240 | **1.42x** | +29.74% |
-| **R09** | READ | Seat-lock check: pending bookings > 10 min | 9.863 | 0.030 | -9.833 | **328.77x** | +99.70% |
-| **R10** | READ | Consecutive shows on screen with < 30m cleaning | 486.657 | 34.682 | -451.975 | **14.03x** | +92.87% |
-| **R11** | READ | Revenue share from recliner seats by screen type | 93.305 | 47.475 | -45.830 | **1.97x** | +49.12% |
-| **R12** | READ | Customers booking same movie more than once | 154.993 | 64.930 | -90.063 | **2.39x** | +58.11% |
-| **R13** | READ | Partnerships: offers never redeemed (NULL-fixed) | 24.832 | 0.107 | -24.725 | **232.07x** | +99.57% |
-| **R14** | READ | Average user rating of 2026 releases (≥20 reviews) | 6.946 | 4.944 | -2.002 | **1.40x** | +28.82% |
-| **R15** | READ | Capacity planning: bookings by weekday and hour | 58.456 | 34.666 | -23.790 | **1.69x** | +40.70% |
-| **R16** | READ | Cancellation rate per venue for June 2026 shows | 40.211 | 18.989 | -21.222 | **2.12x** | +52.78% |
-| **R17** | READ | Screen 101 seats never sold for June 2026 shows | 62.345 | 28.968 | -33.377 | **2.15x** | +53.53% |
-| **R18** | READ | Regional insights: collections per language/city | 127.188 | 42.717 | -84.471 | **2.98x** | +66.41% |
-| **R19** | READ | Tickets sold for every June 2026 show of movie 2 | 2366.689 | 0.675 | -2366.014 | **3506.21x** | +99.97% |
-| **R20** | READ | Finance: daily collections and running total | 29.863 | 10.636 | -19.227 | **2.81x** | +64.38% |
-| **R21** | READ | Loyalty: top 20 customers by confirmed bookings | 94.482 | 44.219 | -50.263 | **2.14x** | +53.20% |
-| **R22** | READ | Support console pagination: page 4,001 | 70.015 | 6.406 | -63.609 | **10.93x** | +90.85% |
-| **R23** | READ | Sign-in customer authentication by phone | 0.034 | 0.022 | -0.012 | **1.55x** | +35.29% |
-| **R24** | READ | Premium seat share of revenue by chain | 102.348 | 57.774 | -44.574 | **1.77x** | +43.55% |
-| **R25** | READ | Screen occupancy rates for evening shows in June | 40.569 | 22.476 | -18.093 | **1.81x** | +44.60% |
-| **W01** | WRITE | New customer signup insert | 1.288 | 0.676 | -0.612 | **1.91x** | +47.52% |
-| **W02** | WRITE | Multi-seat booking checkout transaction | 19.147 | 9.419 | -9.728 | **2.03x** | +50.81% |
-| **W03** | WRITE | Payment gateway callback update | 0.858 | 0.223 | -0.635 | **3.85x** | +74.01% |
-| **W04** | WRITE | Cleanup job: delete expired pending locks | 13.687 | 0.117 | -13.570 | **116.98x** | +99.15% |
-| **W05** | WRITE | Emergency show reschedule update | 9.432 | 1.702 | -7.730 | **5.54x** | +81.96% |
+| **R01** | READ | Movies showing in Bengaluru on 2 July 2026 | 8.626 | 0.722 | -7.904 ms | **11.95x** | +91.63% |
+| **R02** | READ | Movie 2 showtimes in Bengaluru by cinema | 5.969 | 0.212 | -5.757 ms | **28.16x** | +96.45% |
+| **R03** | READ | Show 144446 seat layout & sold status | 0.268 | 0.300 | +0.032 ms | 0.89x | -11.94% |
+| **R04** | READ | Lookup booking by unique booking code | 0.054 | 0.035 | -0.019 ms | **1.54x** | +35.19% |
+| **R05** | READ | Customer 1331 upcoming confirmed bookings | 11.635 | 0.141 | -11.494 ms | **82.52x** | +98.79% |
+| **R06** | READ | Movie title search containing 'kalki' | 0.261 | 0.138 | -0.123 ms | **1.89x** | +47.13% |
+| **R07** | READ | Venue 11 occupancy dashboard on 28 June | 1.106 | 0.102 | -1.004 ms | **10.84x** | +90.78% |
+| **R08** | READ | Top 10 movies by collections over weekend | 24.346 | 17.106 | -7.240 ms | **1.42x** | +29.74% |
+| **R09** | READ | Pending seat locks > 10 min | 9.863 | 0.030 | -9.833 ms | **328.77x** | +99.70% |
+| **R10** | READ | Consecutive shows on screen (<30m cleaning) | 486.657 | 34.682 | -451.975 ms | **14.03x** | +92.87% |
+| **R11** | READ | Recliner ticket revenue share by screen type | 93.305 | 47.475 | -45.830 ms | **1.97x** | +49.12% |
+| **R12** | READ | Customers booking same movie >1 time | 154.993 | 64.930 | -90.063 ms | **2.39x** | +58.11% |
+| **R13** | READ | Offers never redeemed (NULL-corrected) | 24.832 | 0.107 | -24.725 ms | **232.07x** | +99.57% |
+| **R14** | READ | Avg user rating of 2026 releases (≥20 reviews)| 6.946 | 4.944 | -2.002 ms | **1.40x** | +28.82% |
+| **R15** | READ | Bookings by weekday and hour | 58.456 | 34.666 | -23.790 ms | **1.69x** | +40.70% |
+| **R16** | READ | Venue cancellation rates for June 2026 | 40.211 | 18.989 | -21.222 ms | **2.12x** | +52.78% |
+| **R17** | READ | Screen 101 seats never sold in June | 62.345 | 28.968 | -33.377 ms | **2.15x** | +53.53% |
+| **R18** | READ | Regional insights: collections by lang/city | 127.188 | 42.717 | -84.471 ms | **2.98x** | +66.41% |
+| **R19** | READ | Tickets sold per June show for movie 2 | 2366.689 | 0.675 | -2366.014 ms| **3506.21x** | +99.97% |
+| **R20** | READ | Daily collections & running total for June | 29.863 | 10.636 | -19.227 ms | **2.81x** | +64.38% |
+| **R21** | READ | Loyalty: top 20 customers by bookings | 94.482 | 44.219 | -50.263 ms | **2.14x** | +53.20% |
+| **R22** | READ | Support console pagination: page 4,001 | 70.015 | 6.406 | -63.609 ms | **10.93x** | +90.85% |
+| **R23** | READ | Sign-in customer authentication by phone | 0.034 | 0.022 | -0.012 ms | **1.55x** | +35.29% |
+| **R24** | READ | Premium seat share of revenue by chain | 102.348 | 57.774 | -44.574 ms | **1.77x** | +43.55% |
+| **R25** | READ | Evening screen occupancy rates in June | 40.569 | 22.476 | -18.093 ms | **1.81x** | +44.60% |
+| **W01** | WRITE | New customer registration insert | 1.288 | 0.676 | -0.612 ms | **1.91x** | +47.52% |
+| **W02** | WRITE | Multi-seat booking checkout transaction | 19.147 | 9.419 | -9.728 ms | **2.03x** | +50.81% |
+| **W03** | WRITE | Payment gateway callback update | 0.858 | 0.223 | -0.635 ms | **3.85x** | +74.01% |
+| **W04** | WRITE | Delete expired pending seat locks | 13.687 | 0.117 | -13.570 ms | **116.98x** | +99.15% |
+| **W05** | WRITE | Emergency show reschedule update | 9.432 | 1.702 | -7.730 ms | **5.54x** | +81.96% |
 | **Total** | — | **Full Workload Suite (30 Queries)** | **3,805.42 ms** | **444.83 ms** | **-3,360.59 ms** | **8.55x** | **+88.31%** |
 
 ---
 
-## 3. Buffer Cache and I/O Pressure Analysis
+## 8. Percentage Improvement Distribution
 
-Tracking shared buffer hits and reads demonstrates whether execution time reductions stem from genuine I/O reduction or ephemeral cache luck. The table below compares the buffer footprints across the baseline and optimized workloads:
+```
+Workload Latency Distribution:
+  Baseline:  ████████████████████████████████████████ 3,805.42 ms
+  Optimized: ████▌ 444.83 ms (-88.31%)
 
-| Query ID | Baseline Shared Hit | Baseline Shared Read | Optimized Shared Hit | Optimized Shared Read | Memory Block Reduction |
-|---|---:|---:|---:|---:|---|
-| **R01** | 9,230 | 0 | 314 | 0 | **96.6% fewer buffers accessed** |
-| **R02** | 9,229 | 0 | 28 | 0 | **99.7% fewer buffers accessed** |
-| **R05** | 2,236 | 0 | 55 | 0 | **97.5% fewer buffers accessed** |
-| **R07** | 619 | 0 | 83 | 0 | **86.6% fewer buffers accessed** |
-| **R09** | 2,195 | 0 | 9 | 0 | **99.6% fewer buffers accessed** |
-| **R10** | 2,834 | 0 | 148,135 | 0 | Nested index lookups in memory (avoids quadratic disk churn) |
-| **R13** | 2,193 | 0 | 48 | 0 | **97.8% fewer buffers accessed** |
-| **R19** | 455,158 | 0 | 989 | 0 | **99.8% fewer buffers accessed (-454,169 blocks!)** |
-| **R22** | 2,195 | 0 | 834 | 0 | **62.0% fewer buffers accessed (Index Only Scan)** |
-| **W04** | 2,228 | 0 | 45 | 0 | **98.0% fewer buffers accessed** |
-| **W05** | 2,228 | 0 | 1,194 | 0 | **46.4% fewer buffers accessed** |
-
-### Critical Buffer Findings:
-1. **Elimination of Buffer Pollution in R19:** The unoptimized baseline executed 207 sequential scans of `bookings` (2,195 pages each), touching **455,158 shared buffer pages** (over 3.7 GB of memory bandwidth for a single query). The optimized query replaced this with targeted index scans, reading just **989 pages**.
-2. **Zero Disk Reads:** Both baseline and optimized runs operated completely within RAM (`shared read = 0`), confirming that latency gains represent true algorithmic improvements in PostgreSQL's CPU and memory-bus traversal.
+Breakdown by Speedup Tier:
+  > 100x Speedup : 4 queries (R19: 3,506x, R09: 328x, R13: 232x, W04: 117x)
+  10x – 100x     : 5 queries (R05: 82x, R02: 28x, R10: 14x, R01: 12x, R22: 11x)
+  2x – 10x       : 11 queries (R07, W05, W03, R20, R18, R12, R17, R21, R16, W02, R06)
+  1.1x – 2x      : 9 queries (R11, W01, R25, R24, R15, R23, R04, R08, R14)
+  Neutral (±0.03ms): 1 query (R03: already sub-millisecond, operating at 0.30 ms)
+```
 
 ---
 
-## 4. Scan Node Transitions & Execution-Plan Analysis
+## 9. Execution-Plan Deep Dives
 
-| Query ID | Baseline Scan Nodes | Optimized Scan Nodes | Architectural Reason for Transformation |
-|:---|:---|:---|:---|
-| **R01** | `Seq Scan on screens, venues` + `Index Scan on shows` | `Index Scan (idx_shows_screen_id_starts_at)` | Sargable range `s.starts_at >= '2026-07-02' AND s.starts_at < '2026-07-03'` allowed B-tree range scan. |
-| **R02** | `Seq Scan on screens, venues` + `Index Scan on shows` | `Bitmap Index Scan (idx_shows_movie_id_starts_at)` | Direct composite index qualification on `(movie_id, starts_at)`. |
-| **R05** | `Seq Scan on bookings` (150K rows) | `Bitmap Index Scan (idx_bookings_customer_id)` | Replaced full table scan with 1-hop customer index seek. |
-| **R07** | `Seq Scan on screens` + `Index Only Scan on booking_seats` | `Index Scan (idx_screens_venue_id)` + `Bitmap Index Scan (idx_shows_screen_id_starts_at)` | Composite index filtering screens by venue and shows by screen and date. |
-| **R09** | `Seq Scan on bookings` (150K rows) | `Index Scan (idx_bookings_status_booked_at)` | Low-cardinality status prefix ('PENDING') jumps directly to timestamp range. |
-| **R10** | `Seq Scan on shows` (160K rows self-join) | `Index Scan (idx_shows_screen_id_starts_at)` | Replaced quadratic join `s2.starts_at - s1.ends_at < '30 min'` with sargable indexed range. |
-| **R13** | `Seq Scan on offers, bookings` | `Index Only Scan (idx_bookings_offer_code)` | Replaced broken `NOT IN` with `NOT EXISTS` evaluated over partial index `WHERE offer_code IS NOT NULL`. |
-| **R19** | `Seq Scan on shows` + 207 `Seq Scan on bookings` | `Bitmap Index Scan (idx_shows_movie_id_starts_at)` + `Index Scan (idx_bookings_show_id)` | Eliminated correlated scalar subquery in SELECT clause using explicit `LEFT JOIN + GROUP BY`. |
-| **R20** | `Seq Scan on bookings` (150K rows) | `Bitmap Index Scan (idx_bookings_status_booked_at)` | Converted `DATE(booked_at) = '2026-06-...'` to sargable timestamp range. |
-| **R22** | `Seq Scan on bookings` + External Sort | `Index Only Scan (idx_bookings_booked_at_desc)` | B-tree index pre-sorted `DESC` with `INCLUDE` payload allowed zero heap fetches. |
-| **W04** | `Seq Scan on bookings` (150K rows) | `Index Scan (idx_bookings_status_booked_at)` | Target expired pending records identified in 0.05 ms without scanning active bookings. |
-| **W05** | `Seq Scan on shows` (160K rows) | `Bitmap Index Scan (idx_shows_movie_id_starts_at)` | Located target show instantly by movie and start time. |
+### Deep Dive: Query R19 (Distributor Report)
+- **Baseline Plan:**
+  ```text
+  Seq Scan on shows s (filter: movie_id = 2 AND starts_at range) -> 207 rows
+    SubPlan 1
+      -> Aggregate (count)
+        -> Nested Loop
+          -> Seq Scan on bookings b (filter: show_id = s.show_id) [Executed 207 times!]
+          -> Index Scan on booking_seats
+  Execution Time: 2,366.689 ms | Buffers: shared hit=455,158
+  ```
+- **Optimized Plan:**
+  ```text
+  HashAggregate (group by s.show_id, s.starts_at, sc.screen_name)
+    -> Nested Loop Left Join
+      -> Nested Loop Left Join
+        -> Nested Loop (s join sc)
+          -> Bitmap Heap Scan on shows s using idx_shows_movie_id_starts_at
+          -> Index Scan on screens sc
+        -> Index Scan on bookings b using idx_bookings_show_id
+      -> Index Only Scan on booking_seats bs using uq_show_seat
+  Execution Time: 0.675 ms | Buffers: shared hit=989
+  ```
+- **Architectural Analysis:** Eliminating the correlated subquery reduced shared buffer page reads from 455,158 to 989, yielding a **3,506x latency reduction**.
 
 ---
 
-## 5. Index Storage Overhead & Space Breakdown
+## 10. Index Storage Overhead & Database Sizing
 
-While indexes drastically accelerate read queries, they require physical storage and memory footprint. The table below reports the exact on-disk byte footprint measured directly in PostgreSQL 18 via `pg_relation_size()` and `pg_indexes_size()`.
+Measured directly from PostgreSQL catalog views (`pg_relation_size`, `pg_indexes_size`):
 
-### Individual Index Size Inventory (12 CP3 Indexes)
-
-| Table | Index Name | Type / Characteristics | On-Disk Size | Targeted Queries |
-|:---|:---|:---|---:|:---|
-| `bookings` | `idx_bookings_booked_at_desc` | B-tree (Covering `INCLUDE`) | 9,912 kB | R22 |
-| `bookings` | `idx_bookings_status_booked_at` | Composite B-tree `(status, booked_at)` | 4,688 kB | R09, R20, R21, W02, W04 |
-| `bookings` | `idx_bookings_show_id` | Foreign Key B-tree `(show_id)` | 2,912 kB | R08, R12, R16, R18, R19, W02 |
-| `bookings` | `idx_bookings_customer_id` | Foreign Key B-tree `(customer_id)` | 1,960 kB | R05 |
-| `bookings` | `idx_bookings_offer_code` | Partial B-tree `WHERE offer_code IS NOT NULL` | 176 kB | R13 |
-| `shows` | `idx_shows_screen_id_starts_at` | Composite B-tree `(screen_id, starts_at)` | 4,960 kB | R07, R10, R16, R17, R25 |
-| `shows` | `idx_shows_movie_id_starts_at` | Composite B-tree `(movie_id, starts_at)` | 3,000 kB | R01, R02, R08, R18, R19, W05 |
-| `booking_seats` | `idx_booking_seats_seat_id` | Foreign Key B-tree `(seat_id)` | 2,160 kB | R11, R17, R24 |
-| `seats` | `idx_seats_screen_id_seat_class` | Composite B-tree `(screen_id, seat_class)` | 672 kB | R11, R24 |
-| `movie_reviews` | `idx_movie_reviews_movie_id_rating` | Composite B-tree `(movie_id, rating)` | 288 kB | R14 |
-| `screens` | `idx_screens_venue_id` | Foreign Key B-tree `(venue_id)` | 16 kB | R01, R02, R07, R16, R18, R24 |
-| `venues` | `idx_venues_city_id` | Foreign Key B-tree `(city_id)` | 16 kB | R01, R02, R18 |
-| **Total Added** | **12 Performance Indexes** | — | **30,760 kB (~30.04 MB)** | Entire Workload |
-
-### Impact on Overall Database Storage Footprint
-
-| Relation | Table Heap Size | Baseline Index Size | CP3 Added Index Size | Total Index Size | Total Relation Size | Overhead Ratio |
+| Relation | Table Size | Baseline Indexes | Added CP3 Indexes | Total Index Size | Total Size | Overhead % |
 |:---|---:|---:|---:|---:|---:|---:|
-| `bookings` | 17 MB | 9.7 MB | 19.6 MB | 29.3 MB | 46.3 MB | +115% index space |
-| `shows` | 11 MB | 16.0 MB | 8.0 MB | 24.0 MB | 35.0 MB | +50% index space |
-| `booking_seats` | 15 MB | 16.5 MB | 2.2 MB | 18.7 MB | 33.7 MB | +13% index space |
-| `seats` | 4.9 MB | 5.0 MB | 0.7 MB | 5.7 MB | 10.6 MB | +14% index space |
-| `movie_reviews` | 2.0 MB | 1.8 MB | 0.3 MB | 2.1 MB | 4.1 MB | +16% index space |
-| `screens` | 56 kB | 32 kB | 16 kB | 48 kB | 104 kB | +50% index space |
-| `venues` | 48 kB | 16 kB | 16 kB | 32 kB | 80 kB | +100% index space |
-| `customers` | 3.8 MB | 4.5 MB | 0 kB | 4.5 MB | 8.3 MB | 0% |
-| `movies` | 48 kB | 16 kB | 0 kB | 16 kB | 64 kB | 0% |
-| `cities` | 8 kB | 32 kB | 0 kB | 32 kB | 40 kB | 0% |
-| `offers` | 8 kB | 16 kB | 0 kB | 16 kB | 24 kB | 0% |
-| **Complete BMS** | **55 MB** | **53 MB** | **30.8 MB** | **83.8 MB** | **138.8 MB** | **+28.5% total DB size** |
-
-**Storage Assessment:**  
-Adding 30.8 MB of targeted indexes increases the database footprint by 28.5%, while delivering an **88.3% drop in workload latency** and an **8.55x throughput multiplier**. This trade-off is exceptional for enterprise online transaction and analytics systems.
+| `bookings` | 17 MB | 9,728 kB | 19,648 kB | 29,376 kB | 46.3 MB | +69.8% total size |
+| `shows` | 11 MB | 16 MB | 7,960 kB | 24 MB | 35.0 MB | +29.6% total size |
+| `booking_seats` | 15 MB | 16 MB | 2,160 kB | 18 MB | 33.7 MB | +6.8% total size |
+| `seats` | 5,024 kB | 4,976 kB | 672 kB | 5,648 kB | 10.6 MB | +6.7% total size |
+| `movie_reviews` | 2,088 kB | 1,776 kB | 288 kB | 2,064 kB | 4.1 MB | +7.4% total size |
+| `screens` | 56 kB | 32 kB | 16 kB | 48 kB | 104 kB | +18.2% total size |
+| `venues` | 48 kB | 16 kB | 16 kB | 32 kB | 80 kB | +25.0% total size |
+| `customers` | 3,872 kB | 4,496 kB | 0 kB | 4,496 kB | 8.3 MB | 0.0% |
+| `movies` | 48 kB | 16 kB | 0 kB | 16 kB | 64 kB | 0.0% |
+| `cities` | 8 kB | 32 kB | 0 kB | 32 kB | 40 kB | 0.0% |
+| `offers` | 8 kB | 16 kB | 0 kB | 16 kB | 24 kB | 0.0% |
+| **All Relations** | **55.0 MB** | **53.0 MB** | **30.76 MB** | **83.76 MB** | **138.8 MB** | **+28.5% total DB size** |
 
 ---
 
-## 6. WRITE Query Performance & Maintenance Overhead Analysis
+## 11. WRITE Query Performance & Index Maintenance Impact
 
-A common DBMS trade-off is that adding indexes slows down data modifications (`INSERT`, `UPDATE`, `DELETE`) due to WAL logging and B-tree leaf node maintenance. In this workload, write queries demonstrated substantial net performance gains:
+In transactional DBMS design, indexes introduce write overhead because every `INSERT`, `UPDATE`, or `DELETE` must maintain index leaf blocks and emit Write-Ahead Log (WAL) records.
 
-1. **W01 (`INSERT INTO customers`):**
-   - **Baseline:** 1.288 ms → **Optimized:** 0.676 ms (Stable sub-millisecond execution).
-   - **Mechanism:** No new index was placed on `customers`. Insertion cost remained completely unaffected.
-2. **W02 (Multi-Seat Booking Checkout):**
-   - **Baseline:** 19.147 ms → **Optimized:** 9.419 ms (**2.03x faster**).
-   - **Mechanism:** Before creating booking and seat records, the transaction performs candidate validation (verifying screen seats and existing bookings). Accelerating the read/lookup phase outweighed the sub-millisecond index insertion overhead.
-3. **W03 (`UPDATE bookings SET status = 'CONFIRMED'`):**
-   - **Baseline:** 0.858 ms → **Optimized:** 0.223 ms (**3.85x faster**).
-   - **Mechanism:** Index maintenance on `idx_bookings_status_booked_at` is localized to a single leaf page, completed in <0.25 ms.
-4. **W04 (`DELETE FROM bookings WHERE status = 'PENDING' AND booked_at < ...`):**
-   - **Baseline:** 13.687 ms → **Optimized:** 0.117 ms (**116.98x faster!**).
-   - **Mechanism:** In baseline, locating the expired rows required a 150K-row sequential scan. With `idx_bookings_status_booked_at`, candidate identification took 0.05 ms, drastically speeding up total delete time despite index cleanup.
-5. **W05 (`UPDATE shows SET starts_at = ...`):**
-   - **Baseline:** 9.432 ms → **Optimized:** 1.702 ms (**5.54x faster**).
-   - **Mechanism:** Bypassed scanning 160K shows by seeking via `idx_shows_movie_id_starts_at`.
+However, our empirical benchmarks reveal that **every write query improved in execution time**:
+- **W01 (Insert Customer):** Ran in 0.68 ms. No unnecessary indexes were placed on `customers`.
+- **W02 (Booking Checkout):** Improved from 19.15 ms to 9.42 ms (2.03x faster) because accelerating the read verification phase (checking seat availability) outweighed the multi-table index insertion cost.
+- **W03 (Confirm Booking):** Improved from 0.86 ms to 0.22 ms (3.85x faster).
+- **W04 (Delete Expired Locks):** Improved from 13.69 ms to 0.12 ms (**117x faster**). Locating the expired rows via `idx_bookings_status_booked_at` took 0.05 ms, completely eliminating the 150K-row sequential scan.
+- **W05 (Reschedule Show):** Improved from 9.43 ms to 1.70 ms (5.54x faster).
 
 ---
 
-## 7. Queries with Modest or Unchanged Performance
+## 12. Queries with Modest or Unchanged Performance
 
-Certain queries showed little to no timing reduction, for legitimate database architectural reasons:
-1. **R04 (Support Booking Lookup - 0.035 ms) & R23 (Phone Sign-in - 0.022 ms):**
-   - These queries already accessed existing unique primary key / unique constraint B-tree indexes (`bookings_booking_code_key` and `customers_phone_key`). They are already at the physical limit of single-page memory seeks.
+Four queries exhibited modest or neutral performance changes:
+1. **R04 (Booking Code Lookup - 0.035 ms) & R23 (Phone Lookup - 0.022 ms):**
+   - Both operate on unique single-column primary keys / unique constraints (`bookings_booking_code_key` and `customers_phone_key`). They already execute in <0.05 ms (a single B-tree root-to-leaf traverse).
 2. **R06 (Movie Title ILIKE '%kalki%' - 0.138 ms):**
-   - The `movies` table contains only 300 rows (occupying just 48 kB). PostgreSQL's query optimizer correctly identifies that a sequential scan of 6 disk pages in CPU cache is faster than traversing an index tree.
+   - The `movies` table contains only 300 rows (occupying 6 buffer pages). A sequential scan in memory cache is faster than traversing an index structure.
 3. **R03 (Seat Layout - 0.300 ms vs 0.268 ms baseline):**
-   - R03 runs in ~0.3 ms in both phases. Small microsecond variations (±0.03 ms) represent negligible operating system scheduler and IPC variance rather than any plan degradation.
+   - Executing in ~0.3 ms in both phases; microsecond variations represent routine OS scheduling and IPC jitter.
+
+---
+
+## 13. Final Conclusion & CP3 Checklist
+
+The CP3 optimization effort successfully addressed every structural defect in the BookMyShow database workload while preserving data integrity and schema constraints.
+
+### Deliverables Checklist (CHECKPOINTS.md):
+- [x] `sql/05_indexes.sql`: 12 performance indexes with complete comments, query mappings, and rationale.
+- [x] `sql/06_optimized_queries.sql`: All 30 queries optimized, preserving result schemas, with the R13 NULL trap fixed.
+- [x] `benchmarks/results/optimized/`: All 30 raw execution plan files (`R01.txt` to `W05.txt`) and `summary.csv` generated via automated benchmark harness.
+- [x] `docs/04_optimization_report.md`: Comprehensive 13-section report containing real PostgreSQL measurements.
+- [x] Strict preservation of all CP1 and CP2 deliverables on branch `cp3-optimization`.
